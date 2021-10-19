@@ -1,5 +1,5 @@
-#ifndef PLAINLIB_HASH_TABLE_HPP
-#define PLAINLIB_HASH_TABLE_HPP
+#ifndef QS_HASH_TABLE_HPP
+#define QS_HASH_TABLE_HPP
 
 #include <cstdint>
 #include <cstdlib>
@@ -13,7 +13,7 @@
 #include "list.hpp"
 #include "vector.hpp"
 
-namespace pl {
+namespace qs {
 
 // TODO abstract the key to a template
 template <class V> class hash_table;
@@ -49,7 +49,7 @@ public:
 
 template <class V> class hash_table {
   using buckets_t =
-      pl::vector<plainlib::linked_list<hash_table_item<V> *> *>;
+      qs::vector<plainlib::linked_list<hash_table_item<V> *> *>;
   buckets_t buckets;
   std::size_t size;
   std::size_t capacity;
@@ -77,11 +77,11 @@ template <class V> class hash_table {
 
   void init_buckets(std::size_t size) {
     for (std::size_t i = 0; i < size; ++i) {
-      buckets.push(new pl::linked_list<hash_table_item<V> *>());
+      buckets.push(new qs::linked_list<hash_table_item<V> *>());
     }
   }
 
-  pl::linked_list<hash_table_item<V> *> *get_bucket(const uint8_t *key) {
+  qs::linked_list<hash_table_item<V> *> *get_bucket(const uint8_t *key) {
     uint64_t hash = djb2(key) % capacity;
     return buckets[hash];
   }
@@ -92,7 +92,7 @@ template <class V> class hash_table {
   }
 
   list_node<hash_table_item<V> *> *
-  get_by_key(pl::linked_list<hash_table_item<V> *> *bucket,
+  get_by_key(qs::linked_list<hash_table_item<V> *> *bucket,
              const uint8_t *key) {
     auto iter = bucket->head_m();
     while (iter != nullptr) {
@@ -109,7 +109,7 @@ template <class V> class hash_table {
     buckets_t new_vec(new_cap);
     // Resize
     for (std::size_t i = 0; i < (std::size_t)new_cap; ++i) {
-      new_vec.push(new pl::linked_list<hash_table_item<V> *>());
+      new_vec.push(new qs::linked_list<hash_table_item<V> *>());
     }
 
     // Rehash
@@ -221,6 +221,6 @@ public:
   }
 };
 
-} // namespace pl
+} // namespace qs
 
-#endif // PLAINLIB_HASH_TABLE_HPP
+#endif // QS_HASH_TABLE_HPP

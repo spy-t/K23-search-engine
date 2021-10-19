@@ -5,7 +5,7 @@
 #include <plain/bloom.h>
 #include <plain/hash.h>
 
-namespace pl {
+namespace qs {
 
 static void bf_set_bit(uint8_t *bf, size_t pos, std::size_t bf_size);
 static uint8_t bf_get_bit(const uint8_t *bf, std::size_t pos,
@@ -104,4 +104,4 @@ static size_t calculate_k(size_t size, size_t number_of_elements) {
   auto k = (size_t)round(div * ln2);
   return k == 0 ? 1 : k;
 }
-} // namespace pl
+} // namespace qs

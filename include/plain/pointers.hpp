@@ -1,10 +1,10 @@
-#ifndef PLAINLIB_POINTERS_HPP
-#define PLAINLIB_POINTERS_HPP
+#ifndef QS_POINTERS_HPP
+#define QS_POINTERS_HPP
 
 #include "functions/ops.hpp"
 #include <utility>
 
-namespace pl {
+namespace qs {
 
 template <class T> class unique_ptr {
   T *ptr;
@@ -34,7 +34,7 @@ public:
 
   T *release() noexcept {
     T *tmp = nullptr;
-    pl::functions::swap(tmp, ptr);
+    qs::functions::swap(tmp, ptr);
     return tmp;
   }
 
@@ -50,6 +50,6 @@ template <class T, class... Args> unique_ptr<T> make_unique(Args &&...args) {
   return unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-} // namespace pl
+} // namespace qs
 
 #endif

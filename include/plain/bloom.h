@@ -1,10 +1,10 @@
-#ifndef PLAINLIB_BLOOM_H
-#define PLAINLIB_BLOOM_H
+#ifndef QS_BLOOM_H
+#define QS_BLOOM_H
 #include <cstdint>
 #include <cstdlib>
 #include <string>
 
-namespace pl {
+namespace qs {
 
 class bloom {
 
@@ -37,5 +37,5 @@ public:
   void merge(std::size_t size, uint8_t *bytes);
 };
 
-} // namespace pl
+} // namespace qs
 #endif

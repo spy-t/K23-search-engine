@@ -1,10 +1,10 @@
-#ifndef PLAINLIB_QUEUE_H
-#define PLAINLIB_QUEUE_H
+#ifndef QS_QUEUE_H
+#define QS_QUEUE_H
 
 #include "list.hpp"
 #include <iostream>
 
-namespace pl {
+namespace qs {
 
 template <class T> class queue {
   linked_list<T> list;
@@ -30,6 +30,6 @@ public:
     }
   }
 };
-} // namespace pl
+} // namespace qs
 
 #endif

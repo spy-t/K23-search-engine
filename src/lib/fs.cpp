@@ -9,13 +9,13 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-namespace pl {
-const pl::vector<std::string> ls(const std::string &path) {
+namespace qs {
+const qs::vector<std::string> ls(const std::string &path) {
   return ls(path.c_str(), path.length());
 }
 
-const pl::vector<std::string> ls(const char *path, std::size_t len) {
-  pl::vector<std::string> vec;
+const qs::vector<std::string> ls(const char *path, std::size_t len) {
+  qs::vector<std::string> vec;
   const char *sep = path[len - 1] == '/' ? "" : "/";
   DIR *d = opendir(path);
   if (d == nullptr) {
@@ -64,7 +64,7 @@ std::string fd_to_filename(int fd) {
 }
 
 std::string get_basename(const std::string &path) {
-  pl::vector<std::string> tokens;
+  qs::vector<std::string> tokens;
   std::istringstream istream(path);
 
   for (std::string token; std::getline(istream, token, '/');) {
@@ -78,13 +78,13 @@ std::string get_basename(const std::string &path) {
   }
 }
 
-pl::vector<std::string> get_path_members(const std::string &path) {
+qs::vector<std::string> get_path_members(const std::string &path) {
   std::stringstream ss(path);
-  pl::vector<std::string> path_members;
+  qs::vector<std::string> path_members;
   for (std::string token; std::getline(ss, token, '/');) {
     path_members.push(token);
   }
 
   return path_members;
 }
-} // namespace pl
+} // namespace qs

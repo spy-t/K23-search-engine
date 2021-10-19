@@ -1,12 +1,12 @@
-#ifndef PLAINLIB_SKIP_LIST_HPP
-#define PLAINLIB_SKIP_LIST_HPP
+#ifndef QS_SKIP_LIST_HPP
+#define QS_SKIP_LIST_HPP
 
 #include <cstdint>
 #include <ctime>
 #include <random>
 #include <type_traits>
 
-namespace pl {
+namespace qs {
 
 template <class T, std::size_t L> class skip_list;
 
@@ -234,6 +234,6 @@ public:
     --size;
   }
 };
-} // namespace pl
+} // namespace qs
 
 #endif

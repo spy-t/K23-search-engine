@@ -1,5 +1,5 @@
-#ifndef PLAINLIB_VECTOR_HPP
-#define PLAINLIB_VECTOR_HPP
+#ifndef QS_VECTOR_HPP
+#define QS_VECTOR_HPP
 
 #include <cstdint>
 #include <cstdlib>
@@ -10,7 +10,7 @@
 
 #include "functions.hpp"
 
-namespace pl {
+namespace qs {
 template <typename T> class vector {
 private:
   T *data;
@@ -20,7 +20,7 @@ private:
   void resize() {
     capacity = (std::size_t)(capacity * 1.5);
     T *new_data_slice = new T[capacity];
-    pl::functions::copy(data, data + size, new_data_slice);
+    qs::functions::copy(data, data + size, new_data_slice);
     T *old_data_slice = data;
     data = new_data_slice;
     delete[] old_data_slice;
@@ -35,13 +35,13 @@ public:
   vector(const vector &other)
       : data(new T[other.capacity]), size(other.size),
         capacity(other.capacity) {
-    pl::functions::copy(other.data, other.data + other.size, data);
+    qs::functions::copy(other.data, other.data + other.size, data);
   }
   vector &operator=(const vector &other) {
     if (this != &other) {
       T *new_data = new T[other.capacity];
       T *old_data = data;
-      pl::functions::copy(other.data, other.data + other.size, new_data);
+      qs::functions::copy(other.data, other.data + other.size, new_data);
       data = new_data;
       capacity = other.capacity;
       size = other.size;
@@ -121,5 +121,5 @@ public:
   // Returns a reference to the underlying buffer. IT SHOULD NOT BE MODIFIED
   T *get_data() const { return data; }
 };
-} // namespace pl
+} // namespace qs
 #endif

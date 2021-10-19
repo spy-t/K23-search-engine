@@ -1,5 +1,5 @@
-#ifndef PLAINLIB_CYCLIC_BUFFER_HPP
-#define PLAINLIB_CYCLIC_BUFFER_HPP
+#ifndef QS_CYCLIC_BUFFER_HPP
+#define QS_CYCLIC_BUFFER_HPP
 
 #include "error.h"
 #include <cstdint>
@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace pl {
+namespace qs {
 template <class T> class cyclic_buffer {
   std::size_t size;
   std::size_t capacity;
@@ -74,12 +74,12 @@ public:
   bool push(T elem) {
     int ret;
     if ((ret = pthread_mutex_lock(&write_lock)) != 0) {
-      throw std::runtime_error(PLAINLIB_TRACE_ERR(ret));
+      throw std::runtime_error(QS_TRACE_ERR(ret));
     }
     if (cb::is_full()) {
       // Wait for the buffer to have an empty spot
       if ((ret = pthread_cond_wait(&is_full_cond, &write_lock)) != 0) {
-        throw std::runtime_error(PLAINLIB_TRACE_ERR(ret));
+        throw std::runtime_error(QS_TRACE_ERR(ret));
       }
     }
     bool r = cb::push(elem);
@@ -90,19 +90,19 @@ public:
   T *pop() {
     int ret;
     if ((ret = pthread_mutex_lock(&read_lock)) != 0) {
-      throw std::runtime_error(PLAINLIB_TRACE_ERR(ret));
+      throw std::runtime_error(QS_TRACE_ERR(ret));
     }
     bool should_signal = cb::is_full();
     T *elem = cb::pop();
     if (should_signal) {
       // Wake up a waiting writer to write to the buffer
       if ((ret = pthread_cond_signal(&is_full_cond)) != 0) {
-        throw std::runtime_error(PLAINLIB_TRACE_ERR(ret));
+        throw std::runtime_error(QS_TRACE_ERR(ret));
       }
     }
     pthread_mutex_unlock(&read_lock);
     return elem;
   }
 };
-} // namespace pl
+} // namespace qs
 #endif

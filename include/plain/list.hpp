@@ -1,11 +1,11 @@
-#ifndef PLAINLIB_LIST_HPP
-#define PLAINLIB_LIST_HPP
+#ifndef QS_LIST_HPP
+#define QS_LIST_HPP
 #include <cstdlib>
 #include <exception>
 #include <stdexcept>
 #include <utility>
 
-namespace pl {
+namespace qs {
 
 template <class V> class linked_list;
 
@@ -176,5 +176,5 @@ public:
   }
 };
 
-} // namespace pl
-#endif // PLAINLIB_LIST_HPP
+} // namespace qs
+#endif // QS_LIST_HPP

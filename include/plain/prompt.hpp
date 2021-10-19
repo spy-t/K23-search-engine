@@ -1,5 +1,5 @@
-#ifndef PLAINLIB_PROMPT_HPP
-#define PLAINLIB_PROMPT_HPP
+#ifndef QS_PROMPT_HPP
+#define QS_PROMPT_HPP
 
 #include <exception>
 #include <iostream>
@@ -10,7 +10,7 @@
 #include "hash_table.hpp"
 #include "vector.hpp"
 
-namespace pl {
+namespace qs {
 class prompt;
 
 using command_function_t = typename std::add_pointer<void(
@@ -36,7 +36,7 @@ public:
 };
 
 class prompt {
-  pl::hash_table<prompt_command> p_commands;
+  qs::hash_table<prompt_command> p_commands;
   std::string prompt_symbol;
 
   void execute(const std::string &cmd, const vector<std::string> &args) {
@@ -127,5 +127,5 @@ public:
     return false;
   }
 };
-}; // namespace pl
+}; // namespace qs
 #endif

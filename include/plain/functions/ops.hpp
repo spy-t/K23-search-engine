@@ -1,10 +1,10 @@
-#ifndef PLAINLIB_OPS_HPP
-#define PLAINLIB_OPS_HPP
+#ifndef QS_OPS_HPP
+#define QS_OPS_HPP
 
 #include <type_traits>
 #include <utility>
 
-namespace pl {
+namespace qs {
 namespace functions {
 
 template <class I, class D> inline void copy(I from, I to, D destination) {
@@ -22,5 +22,5 @@ template <class T> void swap(T &a, T &b) noexcept {
 }
 
 } // namespace functions
-} // namespace pl
-#endif // PLAINLIB_OPS_HPP
+} // namespace qs
+#endif // QS_OPS_HPP

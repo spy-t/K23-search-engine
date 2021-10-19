@@ -1,6 +1,6 @@
 #include <plain/hash.h>
 
-namespace pl {
+namespace qs {
 uint64_t hash_i(const uint8_t *el, int i) {
   return djb2(el) + i * sdbm(el) + i * i;
 }
@@ -24,4 +24,4 @@ uint64_t sdbm(const uint8_t *str) {
 
   return hash;
 }
-} // namespace pl
+} // namespace qs
