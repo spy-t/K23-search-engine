@@ -1,9 +1,9 @@
 #include <cmath>
 
 #include <cstring>
-#include <stdexcept>
 #include <plain/bloom.h>
 #include <plain/hash.h>
+#include <stdexcept>
 
 namespace qs {
 
@@ -58,7 +58,6 @@ bool bloom::lookup(const uint8_t *el) {
 bool bloom::lookup(const std::string &el) {
   return lookup((uint8_t *)el.c_str());
 }
-
 
 void bloom::merge(std::size_t size, uint8_t *bytes) {
   if (this->size != size) {

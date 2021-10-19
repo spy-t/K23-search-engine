@@ -48,8 +48,7 @@ public:
 };
 
 template <class V> class hash_table {
-  using buckets_t =
-      qs::vector<plainlib::linked_list<hash_table_item<V> *> *>;
+  using buckets_t = qs::vector<plainlib::linked_list<hash_table_item<V> *> *>;
   buckets_t buckets;
   std::size_t size;
   std::size_t capacity;
