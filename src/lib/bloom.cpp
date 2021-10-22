@@ -1,8 +1,8 @@
 #include <cmath>
 
 #include <cstring>
-#include <plain/bloom.h>
-#include <plain/hash.h>
+#include <qs/bloom.h>
+#include <qs/hash.h>
 #include <stdexcept>
 
 namespace qs {

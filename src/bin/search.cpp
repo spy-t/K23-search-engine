@@ -1,6 +1,6 @@
 #include <iostream>
-#include <plain/fs.h>
-#include <plain/vector.hpp>
+#include <qs/fs.h>
+#include <qs/vector.hpp>
 
 int main() {
   qs::vector<int> v(400);

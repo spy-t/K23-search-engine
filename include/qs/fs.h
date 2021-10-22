@@ -2,7 +2,7 @@
 #define QS_FS_H
 
 #include <cstdint>
-#include <plain/vector.hpp>
+#include <qs/vector.hpp>
 #include <string>
 
 namespace qs {

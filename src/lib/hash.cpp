@@ -1,4 +1,4 @@
-#include <plain/hash.h>
+#include <qs/hash.h>
 
 namespace qs {
 uint64_t hash_i(const uint8_t *el, int i) {
