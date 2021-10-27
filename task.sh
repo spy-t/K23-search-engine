@@ -7,20 +7,20 @@ ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
 function init {
-	meson builddir
-	ln -s builddir/compile_commands.json ./
+	meson build
+	ln -s build/compile_commands.json ./
 }
 
 function compile {
-	cd builddir && meson compile
+	cd build && meson compile
 }
 
 function test {
-	cd builddir && meson test --print-errorlogs
+	cd build && meson test --print-errorlogs
 }
 
 function test-mem {
-	cd builddir && meson test --print-errorlogs --wrap='valgrind --leak-check=full'
+	cd build && meson test --print-errorlogs --wrap='valgrind --leak-check=full'
 }
 
 function format {
