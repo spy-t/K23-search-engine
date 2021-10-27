@@ -152,9 +152,6 @@ public:
   static const uint8_t *get_raw_key(const char *k) {
     return (const uint8_t *)k;
   }
-  static const uint8_t *get_raw_key(const std::string &k) {
-    return (const uint8_t *)k.c_str();
-  }
 
   void insert(const uint8_t *key, V value) {
 
@@ -180,17 +177,9 @@ public:
     ++size;
   }
 
-  void insert(std::string key, V value) {
-    insert((const uint8_t *)key.c_str(), value);
-  }
-
   hash_table_item<V> *lookup(const uint8_t *key) {
     auto list_node = get_by_key(key);
     return list_node != nullptr ? list_node->get() : nullptr;
-  }
-
-  hash_table_item<V> *lookup(std::string key) {
-    return lookup((const uint8_t *)key.c_str());
   }
 
   void remove(const uint8_t *key) {
@@ -204,8 +193,6 @@ public:
     delete item;
     --size;
   }
-
-  void remove(std::string key) { remove((const uint8_t *)key.c_str()); }
 
   template <typename F> void for_each(F fn) {
     for (std::size_t i = 0; i < buckets.get_size(); ++i) {

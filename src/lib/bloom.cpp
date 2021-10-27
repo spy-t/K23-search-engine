@@ -43,7 +43,6 @@ void bloom::add(const uint8_t *el) {
     bf_set_bit(bit_field, pos, size);
   }
 }
-void bloom::add(const std::string &el) { add((uint8_t *)el.c_str()); }
 
 bool bloom::lookup(const uint8_t *el) {
   for (size_t i = 1; i <= hash_functions; i++) {
@@ -53,10 +52,6 @@ bool bloom::lookup(const uint8_t *el) {
     }
   }
   return true;
-}
-
-bool bloom::lookup(const std::string &el) {
-  return lookup((uint8_t *)el.c_str());
 }
 
 void bloom::merge(std::size_t size, uint8_t *bytes) {

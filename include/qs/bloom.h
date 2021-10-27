@@ -25,10 +25,8 @@ public:
   bloom &operator=(const bloom &other);
 
   void add(const uint8_t *el);
-  void add(const std::string &el);
 
   bool lookup(const uint8_t *el);
-  bool lookup(const std::string &el);
 
   size_t get_hash_functions() const { return hash_functions; }
   size_t get_size() const { return size; }
