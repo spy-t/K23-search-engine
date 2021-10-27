@@ -41,3 +41,26 @@ SCENARIO("String copy & move semantics work") {
     }
   }
 }
+
+SCENARIO("String indexing works") {
+  GIVEN("A string") {
+    qs::string s((char *)"String 1");
+
+    WHEN("It is dereferenced using a valid index with checked dereference") {
+      auto c = s[0];
+
+      THEN("The character matches") { REQUIRE(c == 'S'); }
+    }
+
+    WHEN("It is dereferenced using an invalid index with checked dereference") {
+
+      THEN("An exception is thrown") { REQUIRE_THROWS(s.operator[](9)); }
+    }
+
+    WHEN("It is dereferenced using a valid index with unchecked dereference") {
+      auto c = *s;
+
+      THEN("The character matches") { REQUIRE(*c == 'S'); }
+    }
+  }
+}

@@ -15,8 +15,25 @@ string::string(std::size_t cap) : str(nullptr), size(cap) {
   str[cap] = '\0';
   is_alloced = true;
 }
-string::string(char *source)
-    : str(source), size(std::strlen(source)), is_alloced(false) {}
+
+string::string(char *source) { string((const char *)source); }
+
+string::string(const char *source) {
+  size = std::strlen(source);
+  str = new char[size + 1];
+  is_alloced = true;
+  std::memcpy(str, source, size);
+  str[size] = '\0';
+}
+
+string::string(int num) {
+  // Use the snprintf hack
+  size = snprintf(0, 0, "%d", num);
+
+  str = new char[size + 1];
+  is_alloced = true;
+  snprintf(str, size + 1, "%d", num);
+}
 
 string::string(const string &other)
     : str(nullptr), size(other.size), is_alloced(true) {
@@ -62,9 +79,27 @@ string string::operator+(const string &other) {
   return s;
 }
 
+char string::operator[](std::size_t index) {
+  if (this->size == 0) {
+    throw std::runtime_error("Invalid index. String is empty");
+  }
+  if (index >= this->size) {
+    throw std::runtime_error("Invalid index. Buffer overflow");
+  }
+
+  return this->str[index];
+}
+
+char *string::operator*() { return this->str; }
+
 bool operator==(const string &first, const string &second) {
   return first.size == second.size &&
          std::memcmp(first.str, second.str, first.size) == 0;
+}
+
+bool operator==(const string &first, const char *second) {
+  return first.size == std::strlen(second) &&
+         std::memcmp(first.str, second, first.size) == 0;
 }
 
 std::ostream &operator<<(std::ostream &out, const string &str) {
@@ -74,5 +109,7 @@ std::ostream &operator<<(std::ostream &out, const string &str) {
 }
 
 std::size_t string::get_size() const { return this->size; }
+
+const char *string::get_buffer() const { return this->str; }
 
 } // namespace qs
