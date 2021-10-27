@@ -2,7 +2,7 @@
 
 #include <qs/string.h>
 
-TEST_CASE("String concatenation works") {
+TEST_CASE("String concatenation") {
   qs::string s1((char *)"String 1");
   qs::string s2((char *)"String 2");
 
