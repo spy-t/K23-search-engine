@@ -15,7 +15,8 @@ include = include_directories('include')
 
 
 tests = {
-	'string_test': ['src/lib/string.cpp']
+	'string_test': ['src/lib/string.cpp'],
+	'sstream_test': ['src/lib/sstream.cpp', 'src/lib/string.cpp']
 }
 global_test_deps = ['src/test/catch_amalgamated.cpp']
 

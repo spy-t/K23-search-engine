@@ -16,7 +16,7 @@ string::string(std::size_t cap) : str(nullptr), size(cap) {
   is_alloced = true;
 }
 
-string::string(char *source) { string((const char *)source); }
+string::string(char *source) : string((const char *)source) {}
 
 string::string(const char *source) {
   size = std::strlen(source);
