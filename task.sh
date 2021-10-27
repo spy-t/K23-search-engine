@@ -15,6 +15,14 @@ function compile {
 	cd builddir && meson compile
 }
 
+function test {
+	cd builddir && meson test --print-errorlogs
+}
+
+function test-mem {
+	cd builddir && meson test --print-errorlogs --wrap='valgrind --leak-check=full'
+}
+
 function format {
 	clang-format -i $(find -type f -name "*.cpp" -or -name "*.h" -or -name "*.hpp")
 }

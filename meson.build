@@ -10,3 +10,10 @@ executable('search',
 	sources : src,
 	include_directories : include,
 	override_options : ['warning_level=3'])
+
+string_test = executable('string_test',
+	sources : ['src/lib/string.cpp', 'src/test/string_test.cpp', 'src/test/catch_amalgamated.cpp'],
+	include_directories : include
+	)
+
+test('string test', string_test)
