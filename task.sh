@@ -16,11 +16,11 @@ function compile {
 }
 
 function test {
-	cd build && meson test --print-errorlogs
+	cd build && meson test "$@" --print-errorlogs
 }
 
 function test-mem {
-	cd build && meson test --print-errorlogs --wrap='valgrind --leak-check=full'
+	cd build && meson test "$@" --print-errorlogs --wrap='valgrind --leak-check=full'
 }
 
 function format {
