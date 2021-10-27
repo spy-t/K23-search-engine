@@ -5,9 +5,12 @@
 #include <qs/vector.hpp>
 
 namespace qs {
+// A basic string builder. When a string is appended to the builder it should
+// not be mutated further
 class stringstream {
 private:
   qs::vector<qs::string> strings;
+  std::size_t size;
 
 public:
   explicit stringstream();

@@ -1,12 +1,13 @@
+#include <iostream>
 #include <qs/sstream.h>
 #include <qs/vector.hpp>
 
 namespace qs {
 
-stringstream::stringstream() {}
+stringstream::stringstream() : size(0) {}
 
 qs::string stringstream::str() {
-  qs::string out;
+  auto out = qs::string::with_size(size);
   for (std::size_t i = 0; i < strings.get_size(); ++i) {
     out = out + strings[i];
   }
@@ -16,6 +17,7 @@ qs::string stringstream::str() {
 
 stringstream &operator<<(stringstream &out, const qs::string &str) {
   out.strings.push(str);
+  out.size += str.get_length();
 
   return out;
 }
