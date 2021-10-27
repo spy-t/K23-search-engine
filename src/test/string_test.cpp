@@ -3,18 +3,41 @@
 #include <qs/string.h>
 #include <utility>
 
-SCENARIO("String sizes work when creating and concatenating") {
+SCENARIO("String concatenation works") {
   GIVEN("Two strings") {
     qs::string s1((char *)"String 1");
     qs::string s2((char *)"String 2");
-    REQUIRE(s1.get_size() == 8);
-    REQUIRE(s2.get_size() == 8);
+    REQUIRE(s1.get_length() == 8);
+    REQUIRE(s2.get_length() == 8);
 
-    WHEN("They are concatenated") {
-      auto s3 = s1 + s2;
+    WHEN("They are purely concatenated") {
+      auto s3 = s1.cat(s2);
 
-      THEN("The resulting string has their summed up size") {
-        REQUIRE(s3.get_size() == s1.get_size() + s2.get_size());
+      THEN("The resulting string is the concatenation") {
+        REQUIRE(s3 == qs::string("String 1String 2"));
+      }
+    }
+
+    WHEN("They are impurely concatenated") {
+      s1 = s1 + s2;
+
+      THEN("The resulting string is the concatenation") {
+        REQUIRE(s1 == qs::string("String 1String 2"));
+        REQUIRE(s1 != qs::string("String 1 String 2"));
+      }
+    }
+  }
+
+  GIVEN("A preallocated string") {
+    auto s = qs::string::with_size(5);
+
+    WHEN("It is impurely concatenated with the numbers from 0 to 4") {
+      for (int i = 0; i < 5; ++i) {
+        s = s + qs::string(i);
+      }
+
+      THEN("The resulting string is 01234 ") {
+        REQUIRE(std::strcmp(*s, "01234") == 0);
       }
     }
   }
@@ -23,7 +46,7 @@ SCENARIO("String sizes work when creating and concatenating") {
 SCENARIO("String copy & move semantics work") {
   GIVEN("A string") {
     qs::string s1((char *)"String 1");
-    auto size = s1.get_size();
+    auto size = s1.get_length();
     WHEN("It is assigned to another variable") {
       auto s2 = s1;
 
@@ -33,10 +56,10 @@ SCENARIO("String copy & move semantics work") {
     WHEN("It is move to another variable") {
       qs::string s2(std::move(s1));
 
-      REQUIRE(s2.get_size() == size);
+      REQUIRE(s2.get_length() == size);
 
       THEN("The old variable is no longer valid") {
-        REQUIRE(s1.get_size() == 0);
+        REQUIRE(s1.get_length() == 0);
       }
     }
   }
