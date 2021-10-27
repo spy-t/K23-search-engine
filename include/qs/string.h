@@ -30,6 +30,7 @@ public:
   // Pure addition operation. The result is a new instance of qs::string
   string operator+(const string &other);
 
+  friend bool operator==(const string &first, const string &second);
   friend std::ostream &operator<<(std::ostream &out, const string &str);
 
   std::size_t get_size() const;

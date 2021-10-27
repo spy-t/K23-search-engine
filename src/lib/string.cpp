@@ -43,6 +43,7 @@ string &string::operator=(string &&other) {
     this->is_alloced = other.is_alloced;
     other.str = nullptr;
     other.size = 0;
+    other.is_alloced = false;
   }
   return *this;
 }
@@ -59,6 +60,11 @@ string string::operator+(const string &other) {
   std::memcpy(s.str + this->size, other.str, other.size);
 
   return s;
+}
+
+bool operator==(const string &first, const string &second) {
+  return first.size == second.size &&
+         std::memcmp(first.str, second.str, first.size) == 0;
 }
 
 std::ostream &operator<<(std::ostream &out, const string &str) {
