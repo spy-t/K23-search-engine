@@ -12,23 +12,23 @@ function init {
 }
 
 function compile {
-	cd build && meson compile
+	meson compile -C build
 }
 
 function test {
-	cd build && meson test "$@" --print-errorlogs
+	meson test "$@" -C build --print-errorlogs
 }
 
 function test-mem {
-	cd build && meson test "$@" --print-errorlogs --wrap='valgrind --leak-check=full'
+	meson test "$@" -C build --print-errorlogs --wrap='valgrind --leak-check=full'
 }
 
 function coverage {
-	cd build && ninja coverage
+	ninja -C build coverage
 }
 
 function format {
-	clang-format -i $(find -type f -name "*.cpp" -or -name "*.h" -or -name "*.hpp")
+	ninja -C build clang-format
 }
 
 "$@"
