@@ -10,3 +10,8 @@
 ./task.sh test-mem [test] # Runs the test suite with valgrind
 ./task.sh coverage        # Generates the code coverage report. Should be run after the tests
 ```
+
+If there was a change in `meson.build` run `meson setup --wipe build/` in order
+to reconfigure. If all else failes delete the `build` directory and regenerate
+it
+
