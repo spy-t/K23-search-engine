@@ -12,6 +12,6 @@
 ```
 
 If there was a change in `meson.build` run `meson setup --wipe build/` in order
-to reconfigure. If all else failes delete the `build` directory and regenerate
+to reconfigure. If all else fails delete the `build` directory and regenerate
 it
 
