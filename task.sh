@@ -20,7 +20,7 @@ function test {
 }
 
 function test-mem {
-	meson test "$@" -C build --print-errorlogs --wrap='valgrind --leak-check=full'
+	meson test "$@" -C build --print-errorlogs --setup=valgrind
 }
 
 function coverage {
