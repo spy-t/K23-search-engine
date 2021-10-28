@@ -177,9 +177,9 @@ public:
     ++size;
   }
 
-  hash_table_item<V> *lookup(const uint8_t *key) {
+  optional<V> lookup(const uint8_t *key) {
     auto list_node = get_by_key(key);
-    return list_node != nullptr ? list_node->get() : nullptr;
+    return list_node != nullptr ? optional(list_node->get()) : optional<V>();
   }
 
   void remove(const uint8_t *key) {

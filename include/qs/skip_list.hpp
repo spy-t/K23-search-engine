@@ -151,7 +151,7 @@ template <class T, std::size_t L> class skip_list {
   }
 
 public:
-  explicit skip_list(sl_compare_func fn)
+  [[maybe_unused]] explicit skip_list(sl_compare_func fn)
       : size(0), rng(std::time(nullptr)), cmp(fn) {
     for (std::size_t i = 0; i < levels; ++i) {
       nodes[i] = nullptr;
@@ -188,14 +188,9 @@ public:
     insert_node(data, descent_path, nodes[levels - 1], levels - 1);
   }
 
-  // TODO This API kinda sucks. Maybe introdue an optional type?
-  void find(T data, T *data_out) {
+  optional<T> find(T data) {
     skip_list_node<T> *n = find_node(data, nodes[levels - 1], levels - 1);
-    if (n == nullptr) {
-      *data_out = nullptr;
-    } else {
-      *data_out = n->data;
-    }
+    return n != nullptr ? optional(n->data) : optional<T>();
   }
 
   void remove(T data) {

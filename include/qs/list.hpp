@@ -72,6 +72,14 @@ template <class V> class linked_list {
     node.next_node = &new_node;
   }
 
+  list_node<V> *_find(list_node<V> *starting_node, V data) {
+    auto curr_node = starting_node;
+    while (curr_node != nullptr && curr_node->get() != data) {
+      curr_node = curr_node->next();
+    }
+    return curr_node;
+  }
+
 public:
   linked_list() : head_node(nullptr), tail_node(nullptr), size(0) {}
 
@@ -173,6 +181,11 @@ public:
 
     --size;
     delete node;
+  }
+
+  optional<V> find(V data) {
+    list_node<V> *ln = this->_find(this->head_node, data, false);
+    return ln != nullptr ? optional(ln->get()) : optional<V>();
   }
 };
 
