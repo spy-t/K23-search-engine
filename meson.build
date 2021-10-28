@@ -1,4 +1,10 @@
-project('search', 'cpp', default_options : ['cpp_std=c++17', 'warning_level=3'])
+project('search', 'cpp',
+	default_options : [
+		'cpp_std=c++17', 
+		'warning_level=3',
+		'buildtype=debug'
+	]
+)
 
 include = include_directories('include')
 
