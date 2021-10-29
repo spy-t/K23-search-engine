@@ -21,7 +21,7 @@ include = include_directories('include')
 
 
 add_test_setup('valgrind',
-	exe_wrapper: ['valgrind', '--leak-check=full', '--track-origins=yes', '--exit-on-first-error=yes'],
+	exe_wrapper: ['valgrind', '--leak-check=full', '--track-origins=yes'],
 	is_default: false)
 
 tests = {
