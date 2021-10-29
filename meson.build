@@ -29,7 +29,8 @@ tests = {
 	'sstream_test': ['src/lib/sstream.cpp', 'src/lib/string.cpp'],
 	'bk_tree_test': ['src/lib/string.cpp'],
 	'vector_test': ['src/lib/string.cpp'],
-	'distances_test': ['src/lib/string.cpp']
+	'distances_test': ['src/lib/string.cpp'],
+	'unique_pointer_test': []
 }
 global_test_deps = ['src/test/catch_amalgamated.cpp']
 

@@ -20,6 +20,23 @@ private:
 public:
   explicit optional() : e(), has_value(false) {}
   explicit optional(T val) : value(val), has_value(true) {}
+
+  optional(optional &other) = delete;
+  optional &operator=(optional &other) = delete;
+
+  optional(optional &&other) { *this = std::move(other); }
+  optional &operator=(optional &&other) {
+    if (this != &other) {
+      other.has_value = false;
+      this->value = std::move(other.value);
+      this->has_value = true;
+    }
+
+    return *this;
+  }
+
+  ~optional() {}
+
   static optional<T> empty() { return optional(); }
 
   T get_or(value_type &&default_) {
@@ -56,6 +73,23 @@ private:
 public:
   explicit optional() : e(), has_value(false) {}
   explicit optional(T val) : value(val), has_value(true) {}
+
+  optional(optional &other) = delete;
+  optional &operator=(optional &other) = delete;
+
+  optional(optional &&other) { *this = std::move(other); }
+  optional &operator=(optional &&other) {
+    if (this != &other) {
+      other.has_value = false;
+      this->value = std::move(other.value);
+      this->has_value = true;
+    }
+
+    return *this;
+  }
+
+  ~optional() {}
+
   static optional<T> empty() { return optional(); }
 
   T &&get_or(T &&default_) {
