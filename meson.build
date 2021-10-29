@@ -30,7 +30,9 @@ tests = {
 	'bk_tree_test': ['src/lib/string.cpp'],
 	'vector_test': ['src/lib/string.cpp'],
 	'distances_test': ['src/lib/string.cpp'],
-	'unique_pointer_test': []
+	'unique_pointer_test': [],
+	'bk_tree_test': [],
+	'crit_bit_tree_test': ['src/lib/string.cpp']
 }
 global_test_deps = ['src/test/catch_amalgamated.cpp']
 
