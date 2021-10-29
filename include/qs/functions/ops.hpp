@@ -21,6 +21,14 @@ template <class T> void swap(T &a, T &b) noexcept {
   b = std::move(tmp);
 }
 
+template <class T>
+std::enable_if_t<std::is_pointer_v<T>, std::remove_pointer_t<T> &> deref(T &t) {
+  return *t;
+}
+template <class T> std::enable_if_t<!std::is_pointer_v<T>, T &> deref(T &t) {
+  return t;
+}
+
 } // namespace functions
 } // namespace qs
 #endif // QS_OPS_HPP
