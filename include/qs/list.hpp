@@ -4,6 +4,7 @@
 #include <exception>
 #include <stdexcept>
 #include <utility>
+#include <qs/optional.hpp>
 
 namespace qs {
 
@@ -183,7 +184,7 @@ public:
     delete node;
   }
 
-  optional<V> find(V data) {
+  qs::optional<V> find(V data) {
     list_node<V> *ln = this->_find(this->head_node, data, false);
     return ln != nullptr ? optional(ln->get()) : optional<V>();
   }
