@@ -179,7 +179,12 @@ public:
 
   optional<V> lookup(const uint8_t *key) {
     auto list_node = get_by_key(key);
-    return list_node != nullptr ? optional(list_node->get()) : optional<V>();
+    if (list_node != nullptr) {
+      auto v = list_node->get();
+      return v != nullptr ? optional(v->get()) : optional<V>();
+    } else {
+      return optional<V>();
+    }
   }
 
   void remove(const uint8_t *key) {
