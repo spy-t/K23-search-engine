@@ -27,7 +27,9 @@ add_test_setup('valgrind',
 tests = {
 	'string_test': ['src/lib/string.cpp'],
 	'sstream_test': ['src/lib/sstream.cpp', 'src/lib/string.cpp'],
-	'bk_tree_test': []
+	'bk_tree_test': ['src/lib/string.cpp'],
+	'vector_test': ['src/lib/string.cpp'],
+	'distances_test': ['src/lib/string.cpp']
 }
 global_test_deps = ['src/test/catch_amalgamated.cpp']
 
