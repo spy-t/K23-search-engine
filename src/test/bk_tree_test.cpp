@@ -6,7 +6,7 @@
 #include <qs/string.h>
 #include <utility>
 
-TEST_CASE("BK-Tree construction completes successfully") {
+TEST_CASE("BK-Tree construction completes without errors") {
 
   GIVEN("A linked list of strings: [hell, help, fall, felt, fell, small]") {
     auto strings = new qs::linked_list<qs::string>();
@@ -19,5 +19,6 @@ TEST_CASE("BK-Tree construction completes successfully") {
 
     qs::bk_tree<qs::string> tree =
         qs::bk_tree<qs::string>(qs::edit_distance, strings);
+    delete strings;
   }
 }
