@@ -2,9 +2,9 @@
 #define QS_LIST_HPP
 #include <cstdlib>
 #include <exception>
+#include <qs/optional.hpp>
 #include <stdexcept>
 #include <utility>
-#include <qs/optional.hpp>
 
 namespace qs {
 
