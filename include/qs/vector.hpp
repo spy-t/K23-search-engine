@@ -86,7 +86,7 @@ public:
   }
 
   void insert_in_place(T elem, int index) {
-    if (index < 0) {
+    if (index < 0 || index > int(size + 1)) {
       throw std::runtime_error("index out of bounds");
     }
     size++;
@@ -95,12 +95,13 @@ public:
     }
     T *new_data = new T[capacity];
     T *left_slice_start = data;
-    T *left_slice_end = data + (index - 1);
+    T *left_slice_end = data + index;
     T *right_slice_start = data + index;
-    T *right_slice_end = data + (size - 1);
+    T *right_slice_end = data + size;
     qs::functions::copy(left_slice_start, left_slice_end, new_data);
     new_data[index] = elem;
-    qs::functions::copy(right_slice_start, right_slice_end, new_data + index + 1);
+    qs::functions::copy(right_slice_start, right_slice_end,
+                        new_data + index + 1);
     T *old_data = data;
     data = new_data;
     delete[] old_data;
