@@ -31,7 +31,7 @@ tests = {
 	'vector_test': ['src/lib/string.cpp'],
 	'distances_test': ['src/lib/string.cpp'],
 	'unique_pointer_test': [],
-	'crit_bit_tree_test': ['src/lib/string.cpp']
+	'hash_set_test': []
 }
 global_test_deps = ['src/test/catch_amalgamated.cpp']
 
