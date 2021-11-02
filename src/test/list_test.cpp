@@ -29,42 +29,5 @@ TEST_CASE("List iteration through iterator") {
         REQUIRE(i - 1 == maxi - 1);
       }
     }
-    WHEN("We iterate forward 1 step we reverse back 1 step") {
-      auto it = l.begin();
-      it++;
-      it--;
-      THEN("We must see the  value of the first node of our list(0 in our "
-           "case)") {
-        REQUIRE(it->get() == 0);
-      }
-    }
-
-    WHEN("We iterate forwards until the end") {
-      auto it = l.begin();
-      auto end = l.end();
-      for (; it != end; ++it) {
-      }
-      WHEN("We go backwards multiple times") {
-        it--;
-        REQUIRE(it->get() == maxi - 1);
-        it--;
-        REQUIRE(it->get() == maxi - 2);
-
-        THEN("We should be able to go forwards again") {
-          it++;
-          REQUIRE(it->get() == maxi - 1);
-        }
-      }
-
-      WHEN("We iterate backwads until the first node") {
-        for (int i = maxi; i > 0; --i) {
-          it--;
-        }
-        THEN("We should be able to move forward again") {
-          it++;
-          REQUIRE(it->get() == 1);
-        }
-      }
-    }
   }
 }

@@ -187,39 +187,25 @@ public:
   }
 
   struct iterator {
-    using iterator_category = std::bidirectional_iterator_tag;
+    using iterator_category = std::forward_iterator_tag;
     using value_type = list_node<V>;
     using pointer = value_type *;
     using reference = value_type &;
 
     pointer cur_p;
-    pointer prev_p;
 
   public:
-    explicit iterator(pointer p) : cur_p(p), prev_p(nullptr){};
+    explicit iterator(pointer p) : cur_p(p){};
 
     reference operator*() { return *cur_p; };
     pointer operator->() { return cur_p; };
     iterator &operator++() {
-      prev_p = cur_p;
       cur_p = cur_p->next_node;
       return *this;
     };
     iterator operator++(int) {
       iterator tmp = *this;
-      prev_p = cur_p;
       cur_p = cur_p->next_node;
-      return tmp;
-    }
-    iterator &operator--() {
-      cur_p = prev_p;
-      prev_p = cur_p->prev_node;
-      return *this;
-    }
-    iterator operator--(int) {
-      iterator tmp = *this;
-      cur_p = prev_p;
-      prev_p = cur_p->prev_node;
       return tmp;
     }
     friend bool operator==(const iterator &a, const iterator &b) {
