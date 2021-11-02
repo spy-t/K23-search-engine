@@ -2,6 +2,7 @@
 #define QS_LIST_HPP
 #include <cstdlib>
 #include <exception>
+#include <iostream>
 #include <qs/optional.hpp>
 #include <stdexcept>
 #include <utility>
@@ -38,8 +39,6 @@ template <class V> class list_node {
 
 public:
   list_node() = delete;
-  list_node(const list_node<V> &other) = delete;
-  list_node<V> &operator=(const list_node<V> &other) = delete;
 
   const list_node<V> *next() const { return next_node; }
   const list_node<V> *prev() const { return prev_node; }
@@ -87,7 +86,6 @@ public:
   // No copy
   linked_list(const linked_list<V> &other) = delete;
   linked_list<V> &operator=(const linked_list<V> &other) = delete;
-
   ~linked_list() {
     auto iter = head_node;
     while (iter != nullptr) {
@@ -188,6 +186,53 @@ public:
     list_node<V> *ln = this->_find(this->head_node, data, false);
     return ln != nullptr ? optional(ln->get()) : optional<V>();
   }
+
+  struct iterator {
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type = list_node<V>;
+    using pointer = value_type *;
+    using reference = value_type &;
+
+    pointer cur_p;
+    pointer prev_p;
+
+  public:
+    explicit iterator(pointer p) : cur_p(p), prev_p(nullptr){};
+
+    reference operator*() { return *cur_p; };
+    pointer operator->() { return cur_p; };
+    iterator &operator++() {
+      prev_p = cur_p;
+      cur_p = cur_p->next_node;
+      return *this;
+    };
+    iterator operator++(int) {
+      iterator tmp = *this;
+      prev_p = cur_p;
+      cur_p = cur_p->next_node;
+      return tmp;
+    }
+    iterator &operator--() {
+      cur_p = prev_p;
+      prev_p = cur_p->prev_node;
+      return *this;
+    }
+    iterator operator--(int) {
+      iterator tmp = *this;
+      cur_p = prev_p;
+      prev_p = cur_p->prev_node;
+      return tmp;
+    }
+    friend bool operator==(const iterator &a, const iterator &b) {
+      return a.cur_p == b.cur_p;
+    };
+    friend bool operator!=(const iterator &a, const iterator &b) {
+      return a.cur_p != b.cur_p;
+    };
+  };
+
+  iterator begin() { return iterator(this->head_node); };
+  iterator end() { return iterator(nullptr); };
 };
 
 } // namespace qs
