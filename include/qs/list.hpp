@@ -2,7 +2,6 @@
 #define QS_LIST_HPP
 #include <cstdlib>
 #include <exception>
-#include <iostream>
 #include <qs/optional.hpp>
 #include <stdexcept>
 #include <utility>

@@ -1,6 +1,5 @@
 #include "catch_amalgamated.hpp"
 #include "qs/list.hpp"
-#include <iostream>
 
 TEST_CASE("List iteration through iterator") {
   GIVEN("A list with some nodes") {
