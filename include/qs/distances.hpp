@@ -5,7 +5,7 @@
 
 namespace qs {
 
-int edit_distance(qs::string s1, qs::string s2) {
+int hamming_distance(qs::string s1, qs::string s2) {
   int dist = 0;
   std::size_t len1 = s1.get_length();
   std::size_t len2 = s2.get_length();
