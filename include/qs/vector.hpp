@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <functional>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <utility>
 
@@ -145,6 +146,54 @@ public:
 
   // Returns a reference to the underlying buffer. IT SHOULD NOT BE MODIFIED
   T *get_data() const { return std::launder(reinterpret_cast<T *>(data)); }
+
+  struct iterator {
+    T_storage *p;
+
+  public:
+    using iterator_category = std::bidirectional_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = T;
+    using pointer = value_type *;
+    using reference = value_type &;
+
+    explicit iterator(T_storage *p) : p(p) {}
+    reference operator*() { return *this->operator->(); }
+    pointer operator->() { return std::launder(reinterpret_cast<T *>(p)); }
+
+    iterator &operator++() {
+      p++;
+      return *this;
+    }
+    iterator operator++(int) {
+      iterator tmp = *this;
+      p++;
+      return tmp;
+    }
+
+    iterator &operator--() {
+      p--;
+      return *this;
+    }
+    iterator operator--(int) {
+      iterator tmp = *this;
+      p--;
+      return tmp;
+    }
+
+    friend bool operator==(const iterator &a, const iterator &b) {
+      return a.p == b.p;
+    }
+    friend bool operator!=(const iterator &a, const iterator &b) {
+      return a.p != b.p;
+    }
+  };
+
+  iterator begin() { return iterator(this->data); }
+  iterator end() { return iterator(&this->data[this->size]); }
+
+  auto rbegin() { return std::make_reverse_iterator(end()); }
+  auto rend() { return std::make_reverse_iterator(begin()); }
 };
 } // namespace qs
 #endif

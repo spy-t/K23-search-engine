@@ -169,3 +169,27 @@ TEST_CASE("vector copying and moving behaves correctly") {
     }
   }
 }
+
+TEST_CASE("vector iterator behaves correctly") {
+  auto v = construct_vector<int>(5, construct_int);
+  SECTION("range loop forward") {
+    int ni = 0;
+    for (auto n : v) {
+      REQUIRE(ni++ == n);
+    }
+  }
+
+  SECTION("conventional loop forward") {
+    int ni = 0;
+    for (auto begin = v.begin(), end = v.end(); begin != end; begin++) {
+      REQUIRE(ni++ == *begin);
+    }
+  }
+
+  SECTION("conventional loop backwards") {
+    int ni = 4;
+    for (auto rbegin = v.rbegin(), rend = v.rend(); rbegin != rend; rbegin++) {
+      REQUIRE(*rbegin == ni--);
+    }
+  }
+}
