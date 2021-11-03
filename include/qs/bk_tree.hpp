@@ -1,133 +1,95 @@
 #ifndef QS_BK_TREE_HPP
 #define QS_BK_TREE_HPP
 
+#include <iostream>
+#include <qs/functions.hpp>
 #include <qs/list.hpp>
 #include <qs/optional.hpp>
 #include <qs/search.hpp>
-#include <qs/vector.hpp>
+#include <qs/skip_list.hpp>
 
 namespace qs {
 
-template <typename T> using distance_func = std::function<int(T a, T b)>;
+#define QS_BK_TREE_SKIP_LIST_LEVELS 16
 
-template <typename T> class bk_tree;
+template <typename T> using distance_func = std::function<int(T &a, T &b)>;
 
-template <typename T> class bk_tree_node {
-  friend class bk_tree<T>;
+template <typename V> class bk_tree_node {
+  using node_p = bk_tree_node<V> *;
+  using node_list = skip_list<node_p, QS_BK_TREE_SKIP_LIST_LEVELS>;
 
-  T data;
-  int distance_from_parent;
-  vector<bk_tree_node<T> *> *children;
-  bk_tree_node<T> *parent;
+  static int sl_compare_func(node_p n1, node_p n2) {
+    return n1->distance_from_parent - n2->distance_from_parent;
+  }
 
-public:
-  explicit bk_tree_node(
-      T d, int distance_from_parent = 0,
-      vector<bk_tree_node<T> *> *children = new vector<bk_tree_node<T> *>(),
-      bk_tree_node<T> *parent = nullptr)
-      : data(d), distance_from_parent(distance_from_parent), children(children),
-        parent(parent) {}
+  V data;
+  int distance_from_parent{};
+  node_list children;
 
-  ~bk_tree_node() {
-    if (this->children != nullptr) {
-      delete this->children;
+  void add_child(node_p new_child, distance_func<V> dist_func) {
+    if (this->children.get_size() > 0) {
+      new_child->distance_from_parent = dist_func(this->data, new_child->data);
+      optional<node_p> result = this->children.find(new_child);
+      if (result.is_empty()) {
+        this->children.insert(new_child);
+      } else {
+        result.get()->add_child(new_child, dist_func);
+      }
+    } else {
+      new_child->distance_from_parent = dist_func(this->data, new_child->data);
+      this->children.insert(new_child);
     }
   }
 
-  T get() { return this->data; }
+public:
+  explicit bk_tree_node(V d)
+      : data(d), distance_from_parent(0),
+        children(node_list(bk_tree_node::sl_compare_func)) {}
 
-  bool can_go_deeper() {
-    return this->children != nullptr && this->children->get_size() > 0;
+  ~bk_tree_node() {
+    functions::for_each(this->children.begin(), this->children.end(),
+                        [](node_p curr) { delete curr; });
   }
+
+  V &get() { return this->data; }
+
+  void add_child(V child_data, distance_func<V> dist_func) {
+    auto new_child = new bk_tree_node<V>(child_data);
+    this->add_child(new_child, dist_func);
+  }
+#ifdef DEBUG
+  const node_list &get_children() { return this->children; }
+#endif
 };
 
 template <typename T> class bk_tree {
+  using node_p = bk_tree_node<T> *;
+
   distance_func<T> d;
-  bk_tree_node<T> *root;
-
-  int binary_search_children(vector<bk_tree_node<T> *> *children,
-                             int search_dist) {
-    int left = 0;
-    int right = children->get_size() - 1;
-    int middle;
-
-    bk_tree_node<T> **data = children->get_data();
-    std::cout << data[0]->get() << "\n";
-
-    while (left <= right) {
-      middle = (left + right) / 2;
-      if (data[middle]->distance_from_parent < search_dist) {
-        left = middle + 1;
-      } else if (data[middle]->distance_from_parent > search_dist) {
-        right = middle - 1;
-      } else {
-        return middle;
-      }
-    }
-    return -1;
-  }
-
-  bk_tree_node<T> *find_parent_of_new_child(T data, int &dist_from_root) {
-    bk_tree_node<T> *curr_root = this->root;
-    while (curr_root != nullptr && curr_root->can_go_deeper()) {
-      dist_from_root = this->d(data, curr_root->get());
-      int found_index =
-          this->binary_search_children(curr_root->children, dist_from_root);
-      if (found_index < 0) {
-        return curr_root;
-      } else {
-        curr_root = (*curr_root->children)[found_index];
-      }
-    }
-    if (curr_root != nullptr) {
-      dist_from_root = this->d(data, curr_root->get());
-    } else {
-      dist_from_root = 0;
-    }
-    return curr_root;
-  }
-
-  void insert_child_sorted(vector<bk_tree_node<T> *> *children,
-                           bk_tree_node<T> *new_child) {
-    std::size_t children_len = children->get_size();
-    std::size_t i;
-    for (i = 0; i < children_len; i++) {
-      if ((*children)[i]->distance_from_parent >=
-          new_child->distance_from_parent) {
-        break;
-      }
-    }
-    children->insert_in_place(new_child, i);
-  }
+  node_p root;
 
 public:
-  bk_tree(distance_func<T> df, linked_list<T> *l) : d(df) {
-    this->root = nullptr;
-    auto curr_list_node = l->head();
-    while (curr_list_node != nullptr) {
-      this->insert(curr_list_node->get());
-      curr_list_node = curr_list_node->next();
-    }
+  friend class bk_tree_node<T>;
+
+  bk_tree(const distance_func<T> df, linked_list<T> *l) : d(df), root(nullptr) {
+    functions::for_each(l->begin(), l->end(), [this](list_node<T> &curr) {
+      this->insert(curr.get());
+    });
   }
 
-  // TODO test if this creates leaks
   ~bk_tree() { delete this->root; }
 
   void insert(T data) {
-    int dist_from_parent = 0;
-    bk_tree_node<T> *parent =
-        this->find_parent_of_new_child(data, dist_from_parent);
-    auto new_node =
-        new bk_tree_node<T>(data, dist_from_parent, nullptr, parent);
-    if (parent == nullptr) {
-      this->root = new_node;
+    if (this->root == nullptr) {
+      this->root = new bk_tree_node<T>(data);
     } else {
-      if (parent->children == nullptr) {
-        parent->children = new vector<bk_tree_node<T> *>();
-      }
-      this->insert_child_sorted(parent->children, new_node);
+      this->root->add_child(data, this->d);
     }
   }
+
+#ifdef DEBUG
+  bk_tree_node<T> *get_root() const { return this->root; }
+#endif
 };
 
 } // namespace qs
