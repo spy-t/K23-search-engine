@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <qs/optional.hpp>
 #include <random>
 #include <type_traits>
 
@@ -151,7 +152,7 @@ template <class T, std::size_t L> class skip_list {
   }
 
 public:
-  [[maybe_unused]] explicit skip_list(sl_compare_func fn)
+  explicit skip_list(sl_compare_func fn)
       : size(0), rng(std::time(nullptr)), cmp(fn) {
     for (std::size_t i = 0; i < levels; ++i) {
       nodes[i] = nullptr;
@@ -228,6 +229,66 @@ public:
     }
     --size;
   }
+
+  std::size_t get_size() { return size; }
+
+  struct iterator {
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type = T;
+    using pointer = T *;
+    using reference = T &;
+
+    skip_list_node<T> *curr;
+    skip_list_node<T> *prev;
+
+  public:
+    explicit iterator(skip_list_node<T> *start) : curr(start), prev(nullptr){};
+
+    iterator(const iterator &other) : curr(other.curr), prev(other.prev) {}
+    iterator &operator=(const iterator &other) {
+      if (this != other) {
+        this->curr = other.curr;
+        this->prev = other.prev;
+      }
+      return *this;
+    }
+
+    reference operator*() const { return curr->data; };
+    pointer operator->() const { return &curr->data; };
+    iterator &operator++() {
+      prev = curr;
+      curr = curr->next;
+      return *this;
+    };
+    iterator operator++(int) {
+      iterator tmp = *this;
+      prev = curr;
+      curr = curr->next;
+      return tmp;
+    }
+    iterator operator--() {
+      curr = prev;
+      prev = curr->prev;
+      return *this;
+    }
+    iterator operator--(int) {
+      iterator tmp = *this;
+      curr = prev;
+      prev = curr->prev;
+      return tmp;
+    }
+    friend bool operator==(const iterator &a, const iterator &b) {
+      return a.curr == b.curr;
+    };
+    friend bool operator!=(const iterator &a, const iterator &b) {
+      return a.curr != b.curr;
+    };
+  };
+
+  iterator begin() {
+    return this->size == 0 ? iterator(nullptr) : iterator(this->nodes[0]);
+  };
+  iterator end() { return iterator(nullptr); };
 };
 } // namespace qs
 
