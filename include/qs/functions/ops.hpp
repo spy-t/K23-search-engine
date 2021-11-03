@@ -1,17 +1,18 @@
 #ifndef QS_OPS_HPP
 #define QS_OPS_HPP
 
+#include <iterator>
 #include <type_traits>
 #include <utility>
 
 namespace qs {
 namespace functions {
 
-template <class I, class D> inline void copy(I from, I to, D destination) {
-  while (from < to) {
-    *destination = *from;
+template <class S, class D> inline void copy(S start, S end, D destination) {
+  while (start != end) {
+    *destination = *start;
     destination++;
-    from++;
+    start++;
   }
 }
 
