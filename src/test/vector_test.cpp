@@ -1,102 +1,116 @@
 #include "catch_amalgamated.hpp"
 
+#include <qs/memory.hpp>
 #include <qs/vector.hpp>
 #include <utility>
 
-SCENARIO("Vector adds items in place") {
-  GIVEN("A sorted vector with all integers in range [0, 3)UNION(0, 6]") {
-    auto v = qs::vector<int>();
-    for (int i = 0; i < 3; i++) {
-      v.push(i);
-    }
-    for (int i = 4; i < 7; i++) {
-      v.push(i);
-    }
+struct obj {
+  int x, y;
+  explicit obj(int x, int y) : x(x), y(y) {}
+  bool operator==(const obj &other) const {
+    return this->x == other.x && this->y == other.y;
+  }
+};
 
-    REQUIRE(v.get_size() == 3 + 3);
+template <typename T, typename C>
+qs::vector<T> construct_vector(std::size_t number_of_elements, C constructor) {
+  auto v = qs::vector<T>();
+  for (std::size_t i = 0; i < number_of_elements; ++i) {
+    v.push(constructor(i));
+  }
 
-    WHEN("Inserting 3 in place with index == 3") {
-      v.insert_in_place(3, 3);
+  return v;
+}
 
-      THEN("The vector contains the ordered set of all integers in [0, 6]") {
-        bool right_vector = true;
-        int i = 0;
-        while (i < int(v.get_size()) && right_vector) {
-          right_vector = v[i] == i;
-          i++;
-        }
-        REQUIRE(right_vector);
-        REQUIRE(v.get_size() == 7);
-      }
+int construct_int(std::size_t i) { return (int)i; }
+obj construct_obj(std::size_t i) { return obj(i, i); }
+qs::unique_pointer<obj> construct_pointer_obj(std::size_t i) {
+  return qs::make_unique<obj>(i, i);
+}
+
+TEST_CASE("vector push behaves correctly") {
+  std::size_t size = 5;
+
+  SECTION("vector of primitives") {
+    auto v = construct_vector<int>(size, construct_int);
+
+    REQUIRE(v.get_size() == size);
+    for (std::size_t i = 0; i < size; ++i) {
+      REQUIRE(v[i] == (int)i);
     }
   }
 
-  GIVEN("A vector with all integers in range [0, 6]") {
-    auto v = qs::vector<int>();
-    for (int i = 0; i < 7; i++) {
-      v.push(i);
-    }
+  SECTION("a vector of owned objects") {
 
-    WHEN("Inserting 7 in place with index == 7") {
-      v.insert_in_place(7, 7);
-      REQUIRE(v.get_size() == 8);
+    auto v = construct_vector<obj>(size, construct_obj);
 
-      THEN("The vector contains the ordered set of all integers in [0, 7]") {
-        bool right_vector = true;
-        int i = 0;
-        while (i < int(v.get_size()) && right_vector) {
-          right_vector = v[i] == i;
-          i++;
-        }
-        REQUIRE(right_vector);
-      }
+    for (std::size_t i = 0; i < size; ++i) {
+      obj o(i, i);
+      REQUIRE(v[i] == o);
     }
   }
 
-  GIVEN("A vector with all integers in range [1, 6]") {
-    auto v = qs::vector<int>();
-    for (int i = 1; i < 7; i++) {
-      v.push(i);
+  SECTION("a vector of unique pointers") {
+    auto v =
+        construct_vector<qs::unique_pointer<obj>>(size, construct_pointer_obj);
+
+    for (std::size_t i = 0; i < size; ++i) {
+      obj o(i, i);
+      REQUIRE(*v[i] == o);
+    }
+  }
+}
+
+TEST_CASE("vector resizing behaves correctly") {
+  std::size_t initial_size = 5;
+  std::size_t size_that_triggers_resize = 5;
+
+  SECTION("vector of primitives") {
+    auto v = construct_vector<int>(initial_size, construct_int);
+
+    for (std::size_t i = initial_size;
+         i < initial_size + size_that_triggers_resize; ++i) {
+      v.push(construct_int(i));
     }
 
-    WHEN("Inserting 0 in place with index == 0") {
-      v.insert_in_place(0, 0);
-      REQUIRE(v.get_size() == 7);
-
-      THEN("The vector contains the ordered set of all integers in [0, 6]") {
-        bool right_vector = true;
-        int i = 0;
-        while (i < int(v.get_size()) && right_vector) {
-          right_vector = v[i] == i;
-          i++;
-        }
-        REQUIRE(right_vector);
-      }
+    REQUIRE(v.get_size() == initial_size + size_that_triggers_resize);
+    for (std::size_t i = 0; i < initial_size + size_that_triggers_resize; ++i) {
+      REQUIRE(v[i] == (int)i);
     }
   }
 
-  GIVEN("A vector with all integers in range [0, 1)UNION(1,6]") {
-    auto v = qs::vector<int>();
-    for (int i = 0; i < 1; i++) {
-      v.push(i);
-    }
-    for (int i = 2; i < 7; i++) {
-      v.push(i);
-    }
+  SECTION("a vector of owned objects") {
 
-    WHEN("Inserting 1 in place with index == 1") {
-      v.insert_in_place(1, 1);
-      REQUIRE(v.get_size() == 7);
+    auto v = construct_vector<obj>(initial_size, construct_obj);
 
-      THEN("The vector contains the ordered set of all integers in [0, 6]") {
-        bool right_vector = true;
-        int i = 0;
-        while (i < int(v.get_size()) && right_vector) {
-          right_vector = v[i] == i;
-          i++;
-        }
-        REQUIRE(right_vector);
-      }
+    for (std::size_t i = initial_size;
+         i < initial_size + size_that_triggers_resize; ++i) {
+      obj o(i, i);
+      v.push(o);
+    }
+    REQUIRE(v.get_size() == initial_size + size_that_triggers_resize);
+
+    for (std::size_t i = 0; i < initial_size + size_that_triggers_resize; ++i) {
+      obj o(i, i);
+      REQUIRE(v[i] == o);
+    }
+  }
+
+  SECTION("a vector of unique pointers") {
+
+    auto v = construct_vector<qs::unique_pointer<obj>>(initial_size,
+                                                       construct_pointer_obj);
+
+    for (std::size_t i = initial_size;
+         i < initial_size + size_that_triggers_resize; ++i) {
+      auto o = construct_pointer_obj(i);
+      v.push(std::move(o));
+    }
+    REQUIRE(v.get_size() == initial_size + size_that_triggers_resize);
+
+    for (std::size_t i = 0; i < initial_size + size_that_triggers_resize; ++i) {
+      obj o(i, i);
+      REQUIRE(*v[i] == o);
     }
   }
 }
