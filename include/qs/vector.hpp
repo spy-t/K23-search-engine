@@ -27,6 +27,12 @@ private:
     delete[] old_data_slice;
   }
 
+  void maybe_resize() {
+    if ((((size + 1) / capacity) * 100) >= 75) {
+      resize();
+    }
+  }
+
 public:
   vector() : data(new T_storage[10]), size(0), capacity(10) {}
   explicit vector(std::size_t capacity)
@@ -72,6 +78,8 @@ public:
       other.size = 0;
       other.capacity = 0;
     }
+
+    return *this;
   }
 
   ~vector() {
@@ -84,39 +92,53 @@ public:
   }
 
   void push(const T &elem) {
-    if ((((size + 1) / capacity) * 100) >= 75) {
-      resize();
-    }
+    maybe_resize();
     new (&data[size]) T(elem);
     size++;
   }
 
   void push(T &&elem) {
-    if ((((size + 1) / capacity) * 100) >= 75) {
-      resize();
-    }
+    maybe_resize();
     new (&data[size]) T(std::move(elem));
     size++;
   }
 
-  void set(int index, T &&elem) {
-    if (index < 0 || (std::size_t)index >= capacity) {
+  void set(std::size_t index, const T &elem) {
+    if (index >= capacity) {
       throw std::runtime_error("index out of bounds");
     }
-    data[index] = std::move(elem);
+    if (index < size) {
+      // Destruct the object that was at that position
+      std::launder(reinterpret_cast<T *>(&data[index]))->~T();
+      new (&data[index]) T(elem);
+    } else {
+      push(elem);
+    }
+  }
+
+  void set(std::size_t index, T &&elem) {
+    if (index >= capacity) {
+      throw std::runtime_error("index out of bounds");
+    }
+    if (index < size) {
+      std::launder(reinterpret_cast<T *>(&data[index]))->~T();
+      new (&data[index]) T(std::move(elem));
+    } else {
+      push(std::move(elem));
+    }
   }
 
   // unchecked dereference at index
-  T &operator[](int index) {
+  T &operator[](std::size_t index) {
     return *std::launder(reinterpret_cast<T *>(&data[index]));
   }
 
   // checked dereference at index
-  T &at(int index) {
-    if (index < 0 || (std::size_t)index >= capacity) {
+  T &at(std::size_t index) {
+    if (index >= size) {
       throw std::runtime_error("index out of bounds");
     }
-    return *std::launder(reinterpret_cast<T *>(&data[index]));
+    return this->operator[](index);
   }
 
   std::size_t get_size() const { return size; }

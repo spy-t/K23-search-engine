@@ -28,6 +28,8 @@ qs::unique_pointer<obj> construct_pointer_obj(std::size_t i) {
   return qs::make_unique<obj>(i, i);
 }
 
+qs::vector<int> f(qs::vector<int> v) { return v; }
+
 TEST_CASE("vector push behaves correctly") {
   std::size_t size = 5;
 
@@ -36,8 +38,10 @@ TEST_CASE("vector push behaves correctly") {
 
     REQUIRE(v.get_size() == size);
     for (std::size_t i = 0; i < size; ++i) {
-      REQUIRE(v[i] == (int)i);
+      REQUIRE(v.at(i) == (int)i);
     }
+    v.set(0, 10);
+    REQUIRE(v.at(0) == 10);
   }
 
   SECTION("a vector of owned objects") {
@@ -46,8 +50,12 @@ TEST_CASE("vector push behaves correctly") {
 
     for (std::size_t i = 0; i < size; ++i) {
       obj o(i, i);
-      REQUIRE(v[i] == o);
+      REQUIRE(v.at(i) == o);
     }
+
+    obj o(10, 10);
+    v.set(0, o);
+    REQUIRE(v.at(0) == o);
   }
 
   SECTION("a vector of unique pointers") {
@@ -56,8 +64,11 @@ TEST_CASE("vector push behaves correctly") {
 
     for (std::size_t i = 0; i < size; ++i) {
       obj o(i, i);
-      REQUIRE(*v[i] == o);
+      REQUIRE(*v.at(i) == o);
     }
+    auto o = construct_pointer_obj(10);
+    v.set(0, std::move(o));
+    REQUIRE(*v.at(0) == obj(10, 10));
   }
 }
 
@@ -75,7 +86,7 @@ TEST_CASE("vector resizing behaves correctly") {
 
     REQUIRE(v.get_size() == initial_size + size_that_triggers_resize);
     for (std::size_t i = 0; i < initial_size + size_that_triggers_resize; ++i) {
-      REQUIRE(v[i] == (int)i);
+      REQUIRE(v.at(i) == (int)i);
     }
   }
 
@@ -92,7 +103,7 @@ TEST_CASE("vector resizing behaves correctly") {
 
     for (std::size_t i = 0; i < initial_size + size_that_triggers_resize; ++i) {
       obj o(i, i);
-      REQUIRE(v[i] == o);
+      REQUIRE(v.at(i) == o);
     }
   }
 
@@ -110,7 +121,51 @@ TEST_CASE("vector resizing behaves correctly") {
 
     for (std::size_t i = 0; i < initial_size + size_that_triggers_resize; ++i) {
       obj o(i, i);
-      REQUIRE(*v[i] == o);
+      REQUIRE(*v.at(i) == o);
+    }
+  }
+}
+
+TEST_CASE("vector runtime excpetions behave correctly") {
+  auto v = construct_vector<int>(5, construct_int);
+
+  SECTION("out of bounds set") { REQUIRE_THROWS(v.set(100, 10)); }
+  SECTION("out of bounds dereference") { REQUIRE_THROWS(v.at(6)); }
+}
+
+TEST_CASE("vector copying and moving behaves correctly") {
+  auto v = construct_vector<int>(5, construct_int);
+  SECTION("assignment") {
+    SECTION("copy") {
+      auto v_copy = v.operator=(v);
+      REQUIRE(v.get_size() == v_copy.get_size());
+      for (std::size_t i = 0; i < v.get_size(); ++i) {
+        REQUIRE(v[i] == v_copy[i]);
+      }
+    }
+
+    SECTION("move") {
+      qs::vector<int> v_moved;
+      v_moved = std::move(v);
+      REQUIRE(v.get_size() == 0);
+      REQUIRE(v_moved.get_size() == 5);
+      REQUIRE(v.get_data() == nullptr);
+    }
+  }
+
+  SECTION("construction") {
+    SECTION("copy") {
+      qs::vector<int> v_copy(v);
+      REQUIRE(v.get_size() == v_copy.get_size());
+      for (std::size_t i = 0; i < v.get_size(); ++i) {
+        REQUIRE(v[i] == v_copy[i]);
+      }
+    }
+
+    SECTION("move") {
+      qs::vector<int> v_moved(
+          std::move(construct_vector<int>(5, construct_int)));
+      REQUIRE(v_moved.get_size() == 5);
     }
   }
 }
