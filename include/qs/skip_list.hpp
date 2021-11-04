@@ -191,7 +191,7 @@ public:
 
   optional<T> find(T data) {
     skip_list_node<T> *n = find_node(data, nodes[levels - 1], levels - 1);
-    return n != nullptr ? optional(n->data) : optional<T>();
+    return n != nullptr ? optional<T>(n->data) : optional<T>();
   }
 
   void remove(T data) {

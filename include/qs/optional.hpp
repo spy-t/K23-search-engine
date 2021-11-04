@@ -5,9 +5,7 @@
 
 namespace qs {
 
-template <typename T, bool = std::is_pointer_v<T>> class optional {
-
-  using value_type = typename std::remove_pointer<T>::type;
+template <typename T> class optional {
 
 private:
   struct empty_marker {};
@@ -17,94 +15,71 @@ private:
   };
   bool has_value;
 
-public:
-  explicit optional() : e(), has_value(false) {}
-  explicit optional(T val) : value(val), has_value(true) {}
-
-  optional(optional &other) = delete;
-  optional &operator=(optional &other) = delete;
-
-  optional(optional &&other) { *this = std::move(other); }
-  optional &operator=(optional &&other) {
-    if (this != &other) {
-      other.has_value = false;
-      this->value = std::move(other.value);
-      this->has_value = true;
-    }
-
-    return *this;
-  }
-
-  ~optional() {}
-
-  static optional<T> empty() { return optional(); }
-
-  T get_or(value_type &&default_) {
+  void empty() {
     if (has_value) {
+      value.~T();
       has_value = false;
-      return value;
-    } else {
-      T boxed_default = new value_type(default_);
-      return boxed_default;
     }
   }
 
-  T get() {
-    if (has_value) {
-      has_value = false;
-      return value;
-    } else {
-      throw std::runtime_error("Bad optional access");
-    }
+  // Since we have made sure that T is trivially copyable we can simply do an
+  // std::forward and cover both the normal constructors and the copy one
+  template <class... Args> void add_value_in_place(Args &&...args) {
+    empty();
+    new (static_cast<void *>(std::addressof(value)))
+        T(std::forward<Args>(args)...);
+    has_value = true;
   }
-
-  bool is_empty() { return !has_value; }
-};
-
-template <typename T> class optional<T, false> {
-private:
-  struct empty_marker {};
-  union {
-    empty_marker e;
-    T value;
-  };
-  bool has_value;
 
 public:
   explicit optional() : e(), has_value(false) {}
-  explicit optional(T val) : value(val), has_value(true) {}
+  template <class... Args>
+  explicit optional(Args &&...args)
+      : value(std::forward<Args>(args)...), has_value(true) {}
 
-  optional(optional &other) = delete;
-  optional &operator=(optional &other) = delete;
-
-  optional(optional &&other) { *this = std::move(other); }
-  optional &operator=(optional &&other) {
-    if (this != &other) {
-      other.has_value = false;
-      this->value = std::move(other.value);
-      this->has_value = true;
+  optional(optional &other) : optional() {
+    if (other.has_value) {
+      add_value_in_place(other.value);
     }
-
+  }
+  optional &operator=(optional &other) {
+    if (other.has_value) {
+      add_value_in_place(other.value);
+    } else {
+      empty();
+    }
     return *this;
   }
 
-  ~optional() {}
-
-  static optional<T> empty() { return optional(); }
-
-  T &&get_or(T &&default_) {
-    if (has_value) {
-      has_value = false;
-      return std::move(value);
+  optional(optional &&other) : optional() {
+    if (other.has_value) {
+      add_value_in_place(std::move(other.value));
+      other.has_value = false;
+    }
+  }
+  optional &operator=(optional &&other) {
+    if (other.has_value) {
+      add_value_in_place(std::move(other.value));
+      other.has_value = false;
     } else {
-      return std::move(default_);
+      empty();
+    }
+    return *this;
+  }
+
+  ~optional() { empty(); }
+
+  T &get_or(T &&default_) {
+    if (has_value) {
+      return value;
+    } else {
+      return default_;
     }
   }
 
-  T &&get() {
+  T &get() {
     if (has_value) {
-      has_value = false;
-      return std::move(value);
+      return value;
     } else {
       throw std::runtime_error("Bad optional access");
     }

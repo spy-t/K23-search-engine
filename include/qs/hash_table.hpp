@@ -181,7 +181,7 @@ public:
     auto list_node = get_by_key(key);
     if (list_node != nullptr) {
       auto v = list_node->get();
-      return v != nullptr ? optional(v->get()) : optional<V>();
+      return v != nullptr ? optional<V>(v->get()) : optional<V>();
     } else {
       return optional<V>();
     }
