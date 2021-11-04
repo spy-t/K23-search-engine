@@ -171,25 +171,66 @@ TEST_CASE("vector copying and moving behaves correctly") {
 }
 
 TEST_CASE("vector iterator behaves correctly") {
-  auto v = construct_vector<int>(5, construct_int);
+  auto v1 = construct_vector<int>(5, construct_int);
+  auto v2 = construct_vector<obj>(5, construct_obj);
+  auto v3 = construct_vector<qs::unique_pointer<obj>>(5, construct_pointer_obj);
   SECTION("range loop forward") {
-    int ni = 0;
-    for (auto n : v) {
-      REQUIRE(ni++ == n);
+    int n1 = 0;
+    for (auto n : v1) {
+      REQUIRE(n1++ == n);
+    }
+
+    int n2 = 0;
+    for (auto n : v2) {
+      REQUIRE(obj(n2, n2) == n);
+      n2++;
+    }
+
+    int n3 = 0;
+    for (auto &n : v3) {
+      REQUIRE(obj(n3, n3) == *n);
+      n3++;
     }
   }
 
   SECTION("conventional loop forward") {
-    int ni = 0;
-    for (auto begin = v.begin(), end = v.end(); begin != end; begin++) {
-      REQUIRE(ni++ == *begin);
+    int n1 = 0;
+    for (auto begin = v1.begin(), end = v1.end(); begin != end; begin++) {
+      REQUIRE(n1++ == *begin);
+    }
+
+    int n2 = 0;
+    for (auto begin = v2.begin(), end = v2.end(); begin != end; begin++) {
+      REQUIRE(obj(n2, n2) == *begin);
+      n2++;
+    }
+
+    int n3 = 0;
+    for (auto begin = v3.begin(), end = v3.end(); begin != end; begin++) {
+      REQUIRE(obj(n3, n3) == **begin);
+      n3++;
     }
   }
 
   SECTION("conventional loop backwards") {
-    int ni = 4;
-    for (auto rbegin = v.rbegin(), rend = v.rend(); rbegin != rend; rbegin++) {
-      REQUIRE(*rbegin == ni--);
+    int n1 = 4;
+    for (auto rbegin = v1.rbegin(), rend = v1.rend(); rbegin != rend;
+         rbegin++) {
+      REQUIRE(*rbegin == n1--);
+    }
+
+    int n2 = 4;
+    for (auto rbegin = v2.rbegin(), rend = v2.rend(); rbegin != rend;
+         rbegin++) {
+      REQUIRE(*rbegin == obj(n2, n2));
+      n2--;
+    }
+
+    int n3 = 4;
+    for (auto rbegin = v3.rbegin(), rend = v3.rend(); rbegin != rend;
+         rbegin++) {
+      REQUIRE(**rbegin == obj(n3, n3));
+      n3--;
     }
   }
 }
