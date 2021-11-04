@@ -5,10 +5,11 @@
 
 TEST_CASE("Edit distance") {
   GIVEN("Two strings: 'hell' and 'felt'") {
-    REQUIRE(qs::edit_distance(qs::string("hell"), qs::string("felt")) == 2);
+    REQUIRE(qs::hamming_distance(qs::string("hell"), qs::string("felt")) == 2);
   };
 
   GIVEN("Two strings: 'when' and 'whenever'") {
-    REQUIRE(qs::edit_distance(qs::string("when"), qs::string("whenever")) == 4);
+    REQUIRE(qs::hamming_distance(qs::string("when"), qs::string("whenever")) ==
+            4);
   }
 }

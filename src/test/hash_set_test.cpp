@@ -1,5 +1,6 @@
 #include "catch_amalgamated.hpp"
 
+#include <qs/functions.hpp>
 #include <qs/hash_set.h>
 
 TEST_CASE("Hash set insertion and removal") {
@@ -37,15 +38,15 @@ TEST_CASE("Hash set retrieve all keys") {
       }
       THEN("We should be able to retrieve all the keys") {
         auto keys = set.get_all();
-        arr.for_each([&keys](const qs::string &val) {
+        for (auto &v : arr) {
           bool found = false;
-          keys.for_each([&val, &found](const qs::string &skey) {
-            if (val == skey) {
+          for (auto &k : keys) {
+            if (v == k) {
               found = true;
             }
-          });
-          REQUIRE(true == found);
-        });
+          }
+          REQUIRE(found == true);
+        }
       }
     }
   }
