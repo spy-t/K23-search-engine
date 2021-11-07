@@ -1,17 +1,62 @@
 # K23 SEARCH
 
-## Runbook
+## Dependencies
+
+- meson
+- ninja
+- gcovr (only if you need test coverage)
+
+## Meson how-to
+
+First you need to initialize meson using
 
 ```bash
-./task.sh init            # Initializes meson
-./task.sh compile         # Compiles the project
-./task.sh format          # Runs clang-format for all the source files
-./task.sh test [test]     # Runs the test suite
-./task.sh test-mem [test] # Runs the test suite with valgrind
-./task.sh coverage        # Generates the code coverage report. Should be run after the tests
+meson build
 ```
 
-If there was a change in `meson.build` run `meson setup --wipe build/` in order
-to reconfigure. If all else fails delete the `build` directory and regenerate
-it
+If you change something to the `meson.build` file run
 
+```bash
+ninja -C build reconfigure
+# Or if that doesn't work
+meson setup --wipe build/
+```
+
+To change configuration options use `meson configure -Doption=value build`.
+The available built-in options are [here](https://mesonbuild.com/Builtin-options.html)
+
+### Compiling
+
+```bash
+meson compile -C build
+```
+
+### Testing
+
+```bash
+meson test -C build # Run all tests
+meson test vector_test -C build # Run a specific test
+meson test -C build --print-errorlogs # Run all tests with stdout/err output
+meson test -C build --gdb # Debug the tests
+meson test -C build --setup=valgrind # Run tests with valgrind
+```
+
+### Extra
+
+To generate the coverage reports you need `gcovr` in your `$PATH`
+```bash
+meson configure -Db_coverage=true build # Make sure you have run this first
+ninja -C build coverage
+```
+
+To format the project use
+
+```bash
+ninja -C build clang-format
+```
+
+To lint the project and scan for common mistakes run
+
+```bash
+ninja -C build scan-build
+```
