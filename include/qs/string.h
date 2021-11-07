@@ -23,7 +23,9 @@ private:
 public:
   explicit string();
   static string with_size(std::size_t capacity);
+  static string from_allocated_string(char *str);
   explicit string(char *source);
+  explicit string(const char *source, size_t length);
   explicit string(const char *source);
   explicit string(int num);
 

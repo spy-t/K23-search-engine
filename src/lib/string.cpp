@@ -23,17 +23,29 @@ string string::with_size(std::size_t cap) {
   return s;
 }
 
+string string::from_allocated_string(char *str) {
+  qs::string s;
+
+  s.str = str;
+  s.length = strlen(str);
+  s.capacity = s.length;
+  s.is_alloced = true;
+
+  return s;
+}
+
 string::string(char *source) : string((const char *)source) {}
 
-string::string(const char *source) {
-  length = std::strlen(source);
+string::string(const char *source) : string(source, strlen(source)) {}
+
+string::string(const char *source, size_t length) {
+  this->length = length;
   str = new char[length + 1];
   is_alloced = true;
   std::memcpy(str, source, length);
   str[length] = '\0';
   capacity = length + 1;
 }
-
 string::string(int num) {
   // Use the snprintf hack
   length = snprintf(0, 0, "%d", num);
