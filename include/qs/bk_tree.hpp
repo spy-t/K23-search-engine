@@ -7,14 +7,17 @@
 #include <qs/optional.hpp>
 #include <qs/search.hpp>
 #include <qs/skip_list.hpp>
+#include <qs/vector.hpp>
 
 namespace qs {
 
 #define QS_BK_TREE_SKIP_LIST_LEVELS 16
 
 template <typename T> using distance_func = std::function<int(T &a, T &b)>;
+template <typename T> class bk_tree;
 
 template <typename V> class bk_tree_node {
+  friend class bk_tree<V>;
   using node_p = bk_tree_node<V> *;
   using node_list = skip_list<node_p, QS_BK_TREE_SKIP_LIST_LEVELS>;
 
@@ -41,6 +44,27 @@ template <typename V> class bk_tree_node {
     }
   }
 
+  void add_child(V child_data, distance_func<V> dist_func) {
+    auto new_child = new bk_tree_node<V>(child_data);
+    this->add_child(new_child, dist_func);
+  }
+
+  void match(const distance_func<V> dist_func, int threshold, V query,
+             int parent_to_query, qs::vector<V> &result) {
+    qs::functions::for_each(
+        this->children.begin(), this->children.end(),
+        [dist_func, &threshold, &query, &parent_to_query, &result](node_p n) {
+          int dist = dist_func(n->data, query);
+          if (dist <= threshold) {
+            result.push(n->data);
+          }
+          if (parent_to_query - threshold <= n->distance_from_parent &&
+              n->distance_from_parent <= parent_to_query + threshold) {
+            n->match(dist_func, threshold, query, dist, result);
+          }
+        });
+  }
+
 public:
   explicit bk_tree_node(V d)
       : data(d), distance_from_parent(0),
@@ -53,10 +77,6 @@ public:
 
   V &get() { return this->data; }
 
-  void add_child(V child_data, distance_func<V> dist_func) {
-    auto new_child = new bk_tree_node<V>(child_data);
-    this->add_child(new_child, dist_func);
-  }
 #ifdef DEBUG
   const node_list &get_children() { return this->children; }
 #endif
@@ -68,23 +88,36 @@ template <typename T> class bk_tree {
   distance_func<T> d;
   node_p root;
 
-public:
-  friend class bk_tree_node<T>;
-
-  bk_tree(const distance_func<T> df, linked_list<T> *l) : d(df), root(nullptr) {
-    functions::for_each(l->begin(), l->end(), [this](list_node<T> &curr) {
-      this->insert(curr.get());
-    });
-  }
-
-  ~bk_tree() { delete this->root; }
-
   void insert(T data) {
     if (this->root == nullptr) {
       this->root = new bk_tree_node<T>(data);
     } else {
       this->root->add_child(data, this->d);
     }
+  }
+
+public:
+  friend class bk_tree_node<T>;
+
+  bk_tree(const distance_func<T> df, linked_list<T> *l) : root(nullptr) {
+    functions::for_each(l->begin(), l->end(), [this, df](list_node<T> &curr) {
+      this->insert(curr.get(), df);
+    });
+  }
+
+  ~bk_tree() { delete this->root; }
+
+  qs::vector<T> &&match(int threshold, T query) const {
+    if (this->root == nullptr) {
+      return qs::vector<T>(0);
+    }
+    auto ret = qs::vector<T>();
+    int D = this->d(query, this->root->data);
+    if (D <= threshold) {
+      ret.push(this->root->data);
+    }
+    this->root->match(this->d, threshold, query, D, ret);
+    return ret;
   }
 
 #ifdef DEBUG
