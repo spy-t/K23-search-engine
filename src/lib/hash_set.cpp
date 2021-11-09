@@ -18,9 +18,7 @@ void hash_set::remove(const qs::string &key) {
 
 vector<qs::string> hash_set::get_all() {
   auto values = vector<qs::string>();
-  this->table.for_each([&values](hash_table_item<char> *val) {
-    values.push(qs::string((char *)val->get_key()));
-  });
+  // TODO(spyros)
   return values;
 }
 } // namespace qs

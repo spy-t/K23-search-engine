@@ -9,9 +9,9 @@
 #include <type_traits>
 #include <utility>
 
-#include "hash.h"
-#include "list.hpp"
-#include "vector.hpp"
+#include <qs/hash.h>
+#include <qs/list.hpp>
+#include <qs/vector.hpp>
 
 namespace qs {
 
@@ -31,24 +31,40 @@ template <class V> class hash_table_item {
     return strcmp((const char *)this->key, (const char *)other) == 0;
   }
 
-  explicit hash_table_item(const uint8_t *k, V value) : value(value) {
+  explicit hash_table_item(const uint8_t *k, V &value) : value(value) {
+    const char *kk = (const char *)k;
+    key = (uint8_t *)strdup(kk);
+  }
+  explicit hash_table_item(const uint8_t *k, V &&value)
+      : value(std::move(value)) {
     const char *kk = (const char *)k;
     key = (uint8_t *)strdup(kk);
   }
 
-  ~hash_table_item() { free(key); }
-
 public:
+  ~hash_table_item() { free(key); }
   // No copy
   hash_table_item(const hash_table_item<V> &other) = delete;
-  const hash_table_item &operator=(const hash_table_item<V> &other) = delete;
+  hash_table_item &operator=(const hash_table_item<V> &other) = delete;
 
-  V get() const { return value; }
+  hash_table_item(hash_table_item<V> &&other) {
+    this->value = std::move(other.value);
+    this->key = other.key;
+    other.key = nullptr;
+  };
+  hash_table_item &operator=(hash_table_item<V> &&other) {
+    this->value = std::move(other.value);
+    this->key = other.key;
+    other.key = nullptr;
+  };
+
+  V &get() { return value; }
+  V &operator*() { return value; }
   const uint8_t *get_key() const { return key; }
 };
 
 template <class V> class hash_table {
-  using buckets_t = qs::vector<qs::linked_list<hash_table_item<V> *> *>;
+  using buckets_t = qs::vector<qs::linked_list<hash_table_item<V>> *>;
   buckets_t buckets;
   std::size_t size;
   std::size_t capacity;
@@ -76,29 +92,28 @@ template <class V> class hash_table {
 
   void init_buckets(std::size_t size) {
     for (std::size_t i = 0; i < size; ++i) {
-      buckets.push(new qs::linked_list<hash_table_item<V> *>());
+      buckets.push(new qs::linked_list<hash_table_item<V>>());
     }
   }
 
-  qs::linked_list<hash_table_item<V> *> *get_bucket(const uint8_t *key) {
+  qs::linked_list<hash_table_item<V>> *get_bucket(const uint8_t *key) {
     uint64_t hash = djb2(key) % capacity;
     return buckets[hash];
   }
 
-  list_node<hash_table_item<V> *> *get_by_key(const uint8_t *key) {
+  list_node<hash_table_item<V>> *get_by_key(const uint8_t *key) {
     auto bucket = get_bucket(key);
     return get_by_key(bucket, key);
   }
 
-  list_node<hash_table_item<V> *> *
-  get_by_key(qs::linked_list<hash_table_item<V> *> *bucket,
-             const uint8_t *key) {
-    auto iter = bucket->head_m();
+  list_node<hash_table_item<V>> *
+  get_by_key(qs::linked_list<hash_table_item<V>> *bucket, const uint8_t *key) {
+    auto iter = bucket->head;
     while (iter != nullptr) {
-      if (iter->get()->keycmp(key)) {
+      if (iter->get().keycmp(key)) {
         return iter;
       }
-      iter = iter->next_m();
+      iter = iter->next();
     }
     return nullptr;
   }
@@ -108,17 +123,17 @@ template <class V> class hash_table {
     buckets_t new_vec(new_cap);
     // Resize
     for (std::size_t i = 0; i < (std::size_t)new_cap; ++i) {
-      new_vec.push(new qs::linked_list<hash_table_item<V> *>());
+      new_vec.push(new qs::linked_list<hash_table_item<V>>());
     }
 
     // Rehash
     for (std::size_t i = 0; i < capacity; ++i) {
       auto bucket = buckets[i];
-      auto iter = bucket->head();
+      auto iter = bucket->head;
       while (iter != nullptr) {
-        auto hash = djb2(iter->get()->key) % new_cap;
+        auto hash = djb2(iter->get().key) % new_cap;
         auto new_bucket = new_vec[hash];
-        new_bucket->append(iter->get());
+        new_bucket->append(std::move(iter->get()));
         iter = iter->next();
       }
       delete bucket;
@@ -139,28 +154,22 @@ public:
 
   ~hash_table() {
     for (std::size_t i = 0; i < capacity; ++i) {
-      auto list = buckets[i];
-      auto head = list->head();
-      while (head != nullptr) {
-        delete head->get();
-        head = head->next();
-      }
-      delete list;
+      delete buckets[i];
     }
   }
+
+  std::size_t get_size() { return size; }
 
   static const uint8_t *get_raw_key(const char *k) {
     return (const uint8_t *)k;
   }
 
-  void insert(const uint8_t *key, V value) {
+  void insert(const uint8_t *key, V &&value) {
 
     // First check if an item with this key already exists in the bucket
     auto bucket = get_bucket(key);
-    for (list_node<hash_table_item<V> *> *i = bucket->head_m(); i != nullptr;
-         i = i->next_m()) {
-      hash_table_item<V> *it = i->get();
-      if (it->keycmp(key)) {
+    for (auto &n : *bucket) {
+      if (n.get().keycmp(key)) {
         return;
       }
     }
@@ -172,19 +181,34 @@ public:
       bucket = get_bucket(key);
     }
 
-    auto item = new hash_table_item<V>(key, value);
-    bucket->append(item);
+    bucket->append(hash_table_item<V>(key, std::move(value)));
+    ++size;
+  }
+
+  void insert(const uint8_t *key, V &value) {
+
+    // First check if an item with this key already exists in the bucket
+    auto bucket = get_bucket(key);
+    for (auto &n : *bucket) {
+      if (n.get().keycmp(key)) {
+        return;
+      }
+    }
+    double load_factor = (double)size / (double)capacity;
+    if (load_factor >= 0.75) {
+      resize();
+      // Relocate the bucket because after the resize it might point to an
+      // invalid location
+      bucket = get_bucket(key);
+    }
+
+    bucket->append(hash_table_item<V>(key, value));
     ++size;
   }
 
   optional<V> lookup(const uint8_t *key) {
-    auto list_node = get_by_key(key);
-    if (list_node != nullptr) {
-      auto v = list_node->get();
-      return v != nullptr ? optional<V>(v->get()) : optional<V>();
-    } else {
-      return optional<V>();
-    }
+    auto n = get_by_key(key);
+    return n != nullptr ? optional<V>(n->get().get()) : optional<V>();
   }
 
   void remove(const uint8_t *key) {
@@ -193,22 +217,8 @@ public:
     if (list_node == nullptr) {
       return;
     }
-    auto item = list_node->get();
     bucket->remove(list_node);
-    delete item;
     --size;
-  }
-
-  template <typename F> void for_each(F fn) {
-    for (std::size_t i = 0; i < buckets.get_size(); ++i) {
-      auto bucket = buckets[i];
-      auto head = bucket->head();
-      while (head != nullptr) {
-        hash_table_item<V> *item = head->get();
-        fn(item);
-        head = head->next();
-      }
-    }
   }
 };
 

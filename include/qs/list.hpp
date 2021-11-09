@@ -18,11 +18,15 @@ template <class V> class list_node {
 
   friend linked_list<V>;
   friend class linked_list<list_node<V>>;
-  explicit list_node(const V value)
+  explicit list_node(const V &value)
+      : value(value), next_node(nullptr), prev_node(nullptr) {}
+  explicit list_node(V &&value)
       : value(value), next_node(nullptr), prev_node(nullptr) {}
 
-  explicit list_node(const V value, list_node<V> *prev, list_node<V> *next)
+  explicit list_node(const V &value, list_node<V> *prev, list_node<V> *next)
       : value(value), next_node(next), prev_node(prev) {}
+  explicit list_node(V &&val, list_node<V> *prev, list_node<V> *next)
+      : value(std::move(val)), next_node(next), prev_node(prev) {}
 
 public:
   list_node() = delete;
@@ -85,8 +89,23 @@ public:
 
   std::size_t get_size() const { return size; }
 
-  list_node<V> &append(const V value) {
+  list_node<V> &append(const V &value) {
     auto node = new list_node<V>(value, tail, nullptr);
+    if (head == nullptr && tail == nullptr) {
+      head = node;
+      tail = node;
+      ++size;
+      return *node;
+    }
+    tail->next_node = node;
+    tail = node;
+
+    ++size;
+    return *node;
+  }
+
+  list_node<V> &append(V &&value) {
+    auto node = new list_node<V>(std::move(value), tail, nullptr);
     if (head == nullptr && tail == nullptr) {
       head = node;
       tail = node;
