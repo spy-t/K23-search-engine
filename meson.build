@@ -19,11 +19,6 @@ include = include_directories('include')
 # 	include_directories : include,
 # 	override_options : ['warning_level=3'])
 
-
-add_test_setup('valgrind',
-	exe_wrapper: ['valgrind', '--leak-check=full', '--track-origins=yes'],
-	is_default: false)
-
 tests = {
 	'string_test': ['src/lib/string.cpp'],
 	'sstream_test': ['src/lib/sstream.cpp', 'src/lib/string.cpp'],

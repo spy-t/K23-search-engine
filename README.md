@@ -38,10 +38,14 @@ meson test -C build # Run all tests
 meson test vector_test -C build # Run a specific test
 meson test -C build --print-errorlogs # Run all tests with stdout/err output
 meson test -C build --gdb # Debug the tests
-meson test -C build --setup=valgrind # Run tests with valgrind
 ```
 
 ### Extra
+
+To compile with `asan` support use
+```bash
+meson configure -Db_sanitize=address
+```
 
 To generate the coverage reports you need `gcovr` in your `$PATH`
 ```bash
