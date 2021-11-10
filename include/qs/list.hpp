@@ -78,6 +78,27 @@ public:
   // No copy
   linked_list(const linked_list<V> &other) = delete;
   linked_list<V> &operator=(const linked_list<V> &other) = delete;
+
+  linked_list(linked_list<V> &&other) : linked_list() {
+    this->size = other.size;
+    this->head = other.head;
+    this->tail = other.tail;
+    other.head = nullptr;
+    other.tail = nullptr;
+    other.size = 0;
+  }
+
+  linked_list<V> &operator=(linked_list<V> &&other) {
+    this->size = other.size;
+    this->head = other.head;
+    this->tail = other.tail;
+    other.head = nullptr;
+    other.tail = nullptr;
+    other.size = 0;
+
+    return *this;
+  }
+
   ~linked_list() {
     auto iter = this->head;
     while (iter != nullptr) {
