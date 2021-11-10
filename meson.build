@@ -41,7 +41,7 @@ global_test_deps = ['src/test/catch_amalgamated.cpp']
 
 foreach test_name, test_deps : tests
 	t = executable(test_name,
-		sources : [f'src/test/@test_name@.cpp'] + test_deps + global_test_deps,
+		sources : ['src/test/@0@.cpp'.format(test_name)] + test_deps + global_test_deps,
 		include_directories : include,
 		cpp_args: '-DDEBUG'
 	)
