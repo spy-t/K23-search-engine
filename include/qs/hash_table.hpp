@@ -47,15 +47,16 @@ public:
   hash_table_item(const hash_table_item<V> &other) = delete;
   hash_table_item &operator=(const hash_table_item<V> &other) = delete;
 
-  hash_table_item(hash_table_item<V> &&other) {
-    this->value = std::move(other.value);
-    this->key = other.key;
+  hash_table_item(hash_table_item<V> &&other)
+      : value(std::move(other.value)), key(other.key) {
     other.key = nullptr;
   };
   hash_table_item &operator=(hash_table_item<V> &&other) {
     this->value = std::move(other.value);
     this->key = other.key;
     other.key = nullptr;
+
+    return *this;
   };
 
   V &get() { return value; }
@@ -64,7 +65,7 @@ public:
 };
 
 template <class V> class hash_table {
-  using buckets_t = qs::vector<qs::linked_list<hash_table_item<V>> *>;
+  using buckets_t = qs::vector<qs::linked_list<hash_table_item<V>>>;
   buckets_t buckets;
   std::size_t size;
   std::size_t capacity;
@@ -92,11 +93,11 @@ template <class V> class hash_table {
 
   void init_buckets(std::size_t size) {
     for (std::size_t i = 0; i < size; ++i) {
-      buckets.push(new qs::linked_list<hash_table_item<V>>());
+      buckets.push(qs::linked_list<hash_table_item<V>>());
     }
   }
 
-  qs::linked_list<hash_table_item<V>> *get_bucket(const uint8_t *key) {
+  qs::linked_list<hash_table_item<V>> &get_bucket(const uint8_t *key) {
     uint64_t hash = djb2(key) % capacity;
     return buckets[hash];
   }
@@ -107,8 +108,8 @@ template <class V> class hash_table {
   }
 
   list_node<hash_table_item<V>> *
-  get_by_key(qs::linked_list<hash_table_item<V>> *bucket, const uint8_t *key) {
-    auto iter = bucket->head;
+  get_by_key(qs::linked_list<hash_table_item<V>> &bucket, const uint8_t *key) {
+    auto iter = bucket.head;
     while (iter != nullptr) {
       if (iter->get().keycmp(key)) {
         return iter;
@@ -123,26 +124,27 @@ template <class V> class hash_table {
     buckets_t new_vec(new_cap);
     // Resize
     for (std::size_t i = 0; i < (std::size_t)new_cap; ++i) {
-      new_vec.push(new qs::linked_list<hash_table_item<V>>());
+      new_vec.push(qs::linked_list<hash_table_item<V>>());
     }
 
     // Rehash
     for (std::size_t i = 0; i < capacity; ++i) {
-      auto bucket = buckets[i];
-      auto iter = bucket->head;
+      auto &bucket = buckets[i];
+      auto iter = bucket.head;
       while (iter != nullptr) {
         auto hash = djb2(iter->get().key) % new_cap;
-        auto new_bucket = new_vec[hash];
-        new_bucket->append(std::move(iter->get()));
+        auto &new_bucket = new_vec[hash];
+        new_bucket.append(std::move(iter->get()));
         iter = iter->next();
       }
-      delete bucket;
     }
-    buckets = new_vec;
+    buckets = std::move(new_vec);
     capacity = new_cap;
   }
 
 public:
+  struct iterator;
+
   hash_table() : buckets(buckets_t(10)), size(0), capacity(10) {
     init_buckets(10);
   }
@@ -153,9 +155,9 @@ public:
   }
 
   ~hash_table() {
-    for (std::size_t i = 0; i < capacity; ++i) {
-      delete buckets[i];
-    }
+    /* for (std::size_t i = 0; i < capacity; ++i) { */
+    /*   delete buckets[i]; */
+    /* } */
   }
 
   std::size_t get_size() { return size; }
@@ -167,7 +169,7 @@ public:
   void insert(const uint8_t *key, V &&value) {
 
     // First check if an item with this key already exists in the bucket
-    auto bucket = get_bucket(key);
+    auto bucket = &get_bucket(key);
     for (auto &n : *bucket) {
       if (n.get().keycmp(key)) {
         return;
@@ -178,7 +180,7 @@ public:
       resize();
       // Relocate the bucket because after the resize it might point to an
       // invalid location
-      bucket = get_bucket(key);
+      bucket = &get_bucket(key);
     }
 
     bucket->append(hash_table_item<V>(key, std::move(value)));
@@ -188,7 +190,7 @@ public:
   void insert(const uint8_t *key, V &value) {
 
     // First check if an item with this key already exists in the bucket
-    auto bucket = get_bucket(key);
+    auto bucket = &get_bucket(key);
     for (auto &n : *bucket) {
       if (n.get().keycmp(key)) {
         return;
@@ -199,27 +201,122 @@ public:
       resize();
       // Relocate the bucket because after the resize it might point to an
       // invalid location
-      bucket = get_bucket(key);
+      bucket = &get_bucket(key);
     }
 
     bucket->append(hash_table_item<V>(key, value));
     ++size;
   }
 
-  optional<V> lookup(const uint8_t *key) {
-    auto n = get_by_key(key);
-    return n != nullptr ? optional<V>(n->get().get()) : optional<V>();
+  iterator lookup(const uint8_t *key) {
+    uint64_t hash = djb2(key) % capacity;
+    auto &bucket = buckets[hash];
+    auto n = bucket.head;
+    while (n != nullptr) {
+      if (n->get().keycmp(key)) {
+        break;
+      }
+      n = n->next();
+    }
+    return n != nullptr ? iterator(n, &buckets, hash) : end();
   }
 
   void remove(const uint8_t *key) {
-    auto bucket = get_bucket(key);
+    auto &bucket = get_bucket(key);
     auto list_node = get_by_key(bucket, key);
     if (list_node == nullptr) {
       return;
     }
-    bucket->remove(list_node);
+    bucket.remove(list_node);
     --size;
   }
+
+  struct iterator {
+    friend class hash_table<V>;
+
+  private:
+    static inline list_node<hash_table_item<V>> *
+    find_first_available(buckets_t &buckets, std::size_t &offset) {
+      if (offset >= buckets.get_size()) {
+        return nullptr;
+      }
+      list_node<hash_table_item<V>> *current = buckets[offset].head;
+      while (current == nullptr && offset < buckets.get_size()) {
+        current = buckets[++offset].head;
+      }
+
+      return current;
+    }
+
+    void empty() {
+      current = nullptr;
+      offset = buckets->get_size();
+    }
+
+  public:
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = hash_table_item<V>;
+    using pointer = value_type *;
+    using reference = value_type &;
+
+    list_node<hash_table_item<V>> *current;
+    buckets_t *buckets;
+    std::size_t offset;
+
+    explicit iterator(list_node<hash_table_item<V>> *current,
+                      buckets_t *buckets, std::size_t offset)
+        : current(current), buckets(buckets), offset(offset) {}
+    iterator(iterator &other) = default;
+    iterator &operator=(iterator &other) = default;
+
+    reference operator*() { return current->get(); }
+    pointer operator->() { return &*this; }
+
+    iterator &operator++() {
+      current = current->next();
+      if (current == nullptr) {
+        current = find_first_available(*buckets, ++offset);
+        if (current == nullptr) {
+          empty();
+        }
+      }
+      return *this;
+    }
+
+    iterator &operator++(int) {
+      iterator old = *this;
+      current = current->next();
+      if (current == nullptr) {
+        current = find_first_available(*buckets, ++offset);
+        if (current == nullptr) {
+          return iterator(nullptr, buckets, buckets->get_size());
+        }
+      }
+      return old;
+    }
+
+    friend bool operator==(const iterator &a, const iterator &b) {
+      return a.current == b.current && a.offset == b.offset;
+    }
+    friend bool operator!=(const iterator &a, const iterator &b) {
+      return !(a == b);
+    }
+  };
+
+  iterator begin() {
+    std::size_t offset = 0;
+    list_node<hash_table_item<V>> *current =
+        iterator::find_first_available(buckets, offset);
+
+    if (current == nullptr) {
+      return end();
+    } else {
+      return iterator(current, &buckets, offset);
+    }
+  }
+
+  iterator end() { return iterator(nullptr, &buckets, buckets.get_size()); }
 };
 
 } // namespace qs

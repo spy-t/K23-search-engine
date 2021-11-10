@@ -68,9 +68,7 @@ public:
 
   vector &operator=(vector &&other) noexcept {
     if (this != &other) {
-      if (data != nullptr) {
-        delete[] data;
-      }
+      this->~vector();
       data = other.data;
       size = other.size;
       capacity = other.capacity;

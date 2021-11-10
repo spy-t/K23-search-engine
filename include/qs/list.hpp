@@ -31,6 +31,23 @@ template <class V> class list_node {
 public:
   list_node() = delete;
 
+  list_node(list_node &&other)
+      : value(std::move(other.value)), next_node(other.next_node),
+        prev_node(other.prev_node) {
+    other.next_node = nullptr;
+    other.prev_node = nullptr;
+  }
+
+  list_node &operator=(list_node &&other) {
+    this->value = std::move(other.value);
+    this->next_node = other.next_node;
+    this->prev_node = other.prev_node;
+    other.next_node = nullptr;
+    other.prev_node = nullptr;
+
+    return *this;
+  }
+
   list_node<V> *next() const { return next_node; }
   list_node<V> *prev() const { return prev_node; }
 
