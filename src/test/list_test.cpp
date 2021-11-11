@@ -54,8 +54,8 @@ TEST_CASE("Linked list iterator behaves as expected") {
     WHEN("We iterate forward with prefix iterator") {
       THEN("We find the expected values") {
         int i = 0;
-        for (auto n : l) {
-          REQUIRE(i++ == n.get());
+        for (auto &n : l) {
+          REQUIRE(i++ == n);
         }
         REQUIRE(i - 1 == maxi - 1);
       }
@@ -64,7 +64,7 @@ TEST_CASE("Linked list iterator behaves as expected") {
       int i = 0;
       THEN("We find the expected values") {
         for (auto it = l.begin(), end = l.end(); it != end; it++) {
-          REQUIRE(i++ == **it);
+          REQUIRE(i++ == *it);
         }
         REQUIRE(i - 1 == maxi - 1);
       }
@@ -74,7 +74,7 @@ TEST_CASE("Linked list iterator behaves as expected") {
       int i = 9;
       THEN("We find the expected values") {
         for (auto it = l.rbegin(), end = l.rend(); it != end; it++) {
-          REQUIRE(i-- == **it);
+          REQUIRE(i-- == *it);
         }
       }
     }

@@ -211,17 +211,17 @@ public:
   struct iterator {
     using iterator_category = std::bidirectional_iterator_tag;
     using difference_type = std::ptrdiff_t;
-    using value_type = list_node<V>;
+    using value_type = V;
     using pointer = value_type *;
     using reference = value_type &;
 
-    pointer p;
+    list_node<V> *p;
 
   public:
-    explicit iterator(pointer p) : p(p){};
+    explicit iterator(list_node<V> * p) : p(p){};
 
-    reference operator*() { return *p; };
-    pointer operator->() { return p; };
+    reference operator*() { return p->get(); };
+    pointer operator->() { return &*this; };
     iterator &operator++() {
       p = p->next_node;
       return *this;
@@ -253,17 +253,17 @@ public:
   struct reverse_iterator {
     using iterator_category = std::bidirectional_iterator_tag;
     using difference_type = std::ptrdiff_t;
-    using value_type = list_node<V>;
+    using value_type = V;
     using pointer = value_type *;
     using reference = value_type &;
 
-    pointer p;
+    list_node<V> *p;
 
   public:
-    explicit reverse_iterator(pointer p) : p(p){};
+    explicit reverse_iterator(list_node<V> * p) : p(p){};
 
-    reference operator*() { return *p; };
-    pointer operator->() { return p; };
+    reference operator*() { return p->get(); };
+    pointer operator->() { return &*this; };
     reverse_iterator &operator++() {
       p = p->prev_node;
       return *this;
