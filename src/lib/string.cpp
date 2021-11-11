@@ -49,7 +49,12 @@ string::string(const string &other) : str(nullptr), length(other.length) {
   capacity = other.length + 1;
 }
 
-string::string(string &&other) { *this = std::move(other); }
+string::string(string &&other)
+    : str(other.str), capacity(other.capacity), length(other.length) {
+  other.str = nullptr;
+  other.length = 0;
+  other.capacity = 0;
+}
 
 string &string::operator=(const string &other) {
   if (this != &other) {

@@ -20,7 +20,9 @@ public:
   unique_pointer(unique_pointer &other) = delete;
   unique_pointer &operator=(unique_pointer &other) = delete;
 
-  unique_pointer(unique_pointer &&other) { *this = std::move(other); }
+  unique_pointer(unique_pointer &&other) : data(other.data) {
+    other.data = nullptr;
+  }
   unique_pointer &operator=(unique_pointer &&other) {
     if (this != &other) {
       this->data = other.data;
