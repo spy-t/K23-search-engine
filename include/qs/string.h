@@ -51,6 +51,16 @@ public:
   friend bool operator!=(const string &first, const string &second);
   friend bool operator!=(const string &first, const char *second);
 
+  friend bool operator<(const string &first, const string &second);
+  friend bool operator<(const string &first, const char *second);
+  friend bool operator<=(const string &first, const string &second);
+  friend bool operator<=(const string &first, const char *second);
+
+  friend bool operator>(const string &first, const string &second);
+  friend bool operator>(const string &first, const char *second);
+  friend bool operator>=(const string &first, const string &second);
+  friend bool operator>=(const string &first, const char *second);
+
   friend std::ostream &operator<<(std::ostream &out, const string &str);
 
   std::size_t get_length() const;
