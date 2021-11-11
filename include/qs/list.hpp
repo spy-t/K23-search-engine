@@ -31,6 +31,9 @@ template <class V> class list_node {
 public:
   list_node() = delete;
 
+  list_node(const list_node &other) = delete;
+  list_node &operator=(const list_node &other) = delete;
+
   list_node(list_node &&other)
       : value(std::move(other.value)), next_node(other.next_node),
         prev_node(other.prev_node) {
@@ -93,8 +96,24 @@ public:
   linked_list() : head(nullptr), tail(nullptr), size(0) {}
 
   // No copy
-  linked_list(const linked_list<V> &other) = delete;
-  linked_list<V> &operator=(const linked_list<V> &other) = delete;
+  linked_list(const linked_list<V> &other) : size(0) {
+    auto iter = other.head;
+    while (iter != nullptr) {
+      this->append(iter->get());
+      iter = iter->next;
+    }
+  }
+  linked_list<V> &operator=(const linked_list<V> &other) {
+    if (*this != other) {
+      this->~linked_list();
+      auto iter = head;
+      while (iter != nullptr) {
+        this->append(iter->get());
+      }
+    }
+
+    return *this;
+  }
 
   linked_list(linked_list<V> &&other) : linked_list() {
     this->size = other.size;
@@ -218,7 +237,7 @@ public:
     list_node<V> *p;
 
   public:
-    explicit iterator(list_node<V> * p) : p(p){};
+    explicit iterator(list_node<V> *p) : p(p){};
 
     reference operator*() { return p->get(); };
     pointer operator->() { return &*this; };
@@ -260,7 +279,7 @@ public:
     list_node<V> *p;
 
   public:
-    explicit reverse_iterator(list_node<V> * p) : p(p){};
+    explicit reverse_iterator(list_node<V> *p) : p(p){};
 
     reference operator*() { return p->get(); };
     pointer operator->() { return &*this; };

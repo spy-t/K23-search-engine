@@ -21,7 +21,7 @@ template <typename V> class bk_tree_node {
   using node_p = bk_tree_node<V> *;
   using node_list = skip_list<node_p, QS_BK_TREE_SKIP_LIST_LEVELS>;
 
-  static int sl_compare_func(node_p n1, node_p n2) {
+  static int sl_compare_func(const node_p &n1, const node_p &n2) {
     return n1->distance_from_parent - n2->distance_from_parent;
   }
 
@@ -32,11 +32,11 @@ template <typename V> class bk_tree_node {
   void add_child(node_p new_child, distance_func<V> dist_func) {
     if (this->children.get_size() > 0) {
       new_child->distance_from_parent = dist_func(this->data, new_child->data);
-      optional<node_p> result = this->children.find(new_child);
-      if (result.is_empty()) {
+      auto result = this->children.find(new_child);
+      if (result == this->children.end()) {
         this->children.insert(new_child);
       } else {
-        result.get()->add_child(new_child, dist_func);
+        (*result)->add_child(new_child, dist_func);
       }
     } else {
       new_child->distance_from_parent = dist_func(this->data, new_child->data);

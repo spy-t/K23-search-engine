@@ -49,6 +49,15 @@ template <class T> void swap(T &a, T &b) noexcept {
 template <class T> T max(const T &a, const T &b) { return a > b ? a : b; }
 template <class T> T min(const T &a, const T &b) { return a < b ? a : b; }
 
+template <class I, class T> inline I find(I start, I end, const T &t) {
+  while (start != end) {
+    if (*start == t) {
+      return start;
+    }
+    start++;
+  }
+  return end;
+}
 } // namespace functions
 } // namespace qs
 #endif // QS_OPS_HPP

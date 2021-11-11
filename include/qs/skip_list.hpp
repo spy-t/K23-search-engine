@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <qs/list.hpp>
 #include <qs/optional.hpp>
 #include <random>
 #include <type_traits>
@@ -12,48 +13,55 @@ namespace qs {
 template <class T, std::size_t L> class skip_list;
 
 template <class T, std::size_t L> class skip_list {
-  using sl_compare_func = typename std::add_pointer<int(T, T)>::type;
+  class skip_list_node;
+  using sl_compare_func =
+      typename std::add_pointer<int(const T &, const T &)>::type;
 
   std::size_t levels = L;
   std::size_t size;
   std::mt19937_64 rng;
 
   sl_compare_func cmp;
+  skip_list_node *nodes[L] = {0};
+  qs::linked_list<T> data_list;
 
-  template <class V> class skip_list_node {
-    skip_list_node<V> *next;
-    skip_list_node<V> *prev;
-    skip_list_node<V> *top;
-    skip_list_node<V> *bottom;
+  class skip_list_node {
+    skip_list_node *next = nullptr;
+    skip_list_node *prev = nullptr;
+    skip_list_node *top = nullptr;
+    skip_list_node *bottom = nullptr;
 
-    T data;
+    list_node<T> *data_ptr = nullptr;
 
     friend skip_list;
 
   public:
-    skip_list_node(V data)
+    skip_list_node(list_node<T> *data)
         : next(nullptr), prev(nullptr), top(nullptr), bottom(nullptr),
-          data(data) {}
-    skip_list_node(V data, skip_list_node<V> *prev, skip_list_node<V> *next,
-                   skip_list_node<V> *bottom, skip_list_node<V> *top)
-        : data(data), prev(prev), next(next), bottom(bottom), top(top) {}
-  };
+          data_ptr(data) {}
 
-  skip_list_node<T> *nodes[L];
+    skip_list_node(list_node<T> *data, skip_list_node *prev,
+                   skip_list_node *next, skip_list_node *bottom,
+                   skip_list_node *top)
+        : data_ptr(data), prev(prev), next(next), bottom(bottom), top(top) {}
+
+    T &operator*() { return data_ptr->get(); }
+  };
 
   int random_level() {
     std::uniform_int_distribution<int> dist(0, levels - 1);
     return dist(rng);
   }
 
-  void insert_with_path(T data, skip_list_node<T> *(&descent_path)[L]) {
+  void insert_with_path(list_node<T> *data,
+                        skip_list_node *(&descent_path)[L]) {
     int height = random_level();
     ++size;
 
-    skip_list_node<T> *bottom = nullptr;
+    skip_list_node *bottom = nullptr;
 
     for (std::size_t i = 0; i <= (std::size_t)height; ++i) {
-      skip_list_node<T> *n = new skip_list_node<T>(data);
+      skip_list_node *n = new skip_list_node(data);
       n->prev = descent_path[i];
 
       // Head edge case
@@ -79,17 +87,18 @@ template <class T, std::size_t L> class skip_list {
     }
   }
 
-  void insert_node(T data, skip_list_node<T> *(&descent_path)[L],
-                   skip_list_node<T> *start_node, std::size_t level) {
+  void insert_node(list_node<T> *data, skip_list_node *(&descent_path)[L],
+                   skip_list_node *start_node, std::size_t level) {
     if (start_node == nullptr && level != 0) {
       descent_path[level] = nullptr;
       return insert_node(data, descent_path, nodes[level - 1], level - 1);
     }
 
-    skip_list_node<T> *n = start_node;
+    skip_list_node *n = start_node;
 
     while (n != nullptr) {
-      int cmp_res = cmp(n->data, data);
+      int cmp_res =
+          n->data_ptr != nullptr ? cmp(n->data_ptr->get(), data->get()) : 1;
       if (cmp_res == 0) {
         // Update not supported
         return;
@@ -119,16 +128,15 @@ template <class T, std::size_t L> class skip_list {
     }
   }
 
-  skip_list_node<T> *find_node(T data, skip_list_node<T> *start,
-                               std::size_t level) {
+  skip_list_node *find_node(T &data, skip_list_node *start, std::size_t level) {
     if (start == nullptr && level != 0) {
       return find_node(data, nodes[level - 1], level - 1);
     }
 
-    skip_list_node<T> *n = start;
+    skip_list_node *n = start;
 
     while (n != nullptr) {
-      int cmp_res = cmp(n->data, data);
+      int cmp_res = n->data_ptr != nullptr ? cmp(n->data_ptr->get(), data) : 1;
       if (cmp_res == 0) {
         return n;
       } else if (cmp_res > 0 && level != 0) {
@@ -152,6 +160,7 @@ template <class T, std::size_t L> class skip_list {
   }
 
 public:
+  struct iterator;
   explicit skip_list(sl_compare_func fn)
       : size(0), rng(std::time(nullptr)), cmp(fn) {
     for (std::size_t i = 0; i < levels; ++i) {
@@ -159,9 +168,32 @@ public:
     }
   }
 
+  // Copy operations do not preserve the same level structure to save time
+  skip_list(const skip_list &other) : cmp(other.cmp) {
+    auto iter = other.data_list.head;
+    while (iter != nullptr) {
+      this->insert(iter->get());
+      iter = iter->next();
+    }
+  }
+
+  // Copy operations do not preserve the same level structure to save time
+  skip_list &operator=(const skip_list &other) {
+    if (*this != other) {
+      cmp = other.cmp;
+      auto iter = other.data_list.head;
+      while (iter != nullptr) {
+        this->insert(iter->get());
+        iter = iter->next();
+      }
+    }
+
+    return *this;
+  }
+
   ~skip_list() {
     for (std::size_t i = 0; i < levels; ++i) {
-      skip_list_node<T> *n = nodes[i];
+      skip_list_node *n = nodes[i];
       while (n != nullptr) {
         auto tmp = n;
         n = n->next;
@@ -170,11 +202,12 @@ public:
     }
   }
 
-  void insert(T data) {
+  void insert(T &data) {
+    auto &ln = data_list.append(data);
     if (nodes[0] == nullptr) {
       int height = random_level();
       for (std::size_t i = 0; i <= (std::size_t)height; ++i) {
-        auto node = new skip_list_node<T>(data);
+        auto node = new skip_list_node(std::addressof(ln));
         nodes[i] = node;
         if (i != 0) {
           node->bottom = nodes[i - 1];
@@ -185,23 +218,51 @@ public:
       return;
     }
 
-    skip_list_node<T> *descent_path[L];
-    insert_node(data, descent_path, nodes[levels - 1], levels - 1);
+    skip_list_node *descent_path[L];
+    insert_node(std::addressof(ln), descent_path, nodes[levels - 1],
+                levels - 1);
   }
 
-  optional<T> find(T data) {
-    skip_list_node<T> *n = find_node(data, nodes[levels - 1], levels - 1);
-    return n != nullptr ? optional<T>(n->data) : optional<T>();
-  }
-
-  void remove(T data) {
-    skip_list_node<T> *n = find_node(data, nodes[levels - 1], levels - 1);
-    if (n == nullptr) {
+  void insert(T &&data) {
+    auto &ln = data_list.append(std::move(data));
+    if (nodes[0] == nullptr) {
+      int height = random_level();
+      for (std::size_t i = 0; i <= (std::size_t)height; ++i) {
+        auto node = new skip_list_node(std::addressof(ln));
+        nodes[i] = node;
+        if (i != 0) {
+          node->bottom = nodes[i - 1];
+          node->bottom->top = node;
+        }
+      }
+      ++size;
       return;
     }
 
+    skip_list_node *descent_path[L];
+    insert_node(std::addressof(ln), descent_path, nodes[levels - 1],
+                levels - 1);
+  }
+
+  iterator find(T &data) {
+    skip_list_node *n = find_node(data, nodes[levels - 1], levels - 1);
+    return iterator(n);
+  }
+
+  void remove(T &data) {
+    skip_list_node *n = find_node(data, nodes[levels - 1], levels - 1);
+    remove(iterator(n));
+  }
+
+  void remove(iterator iter) {
+    skip_list_node *n = iter->curr;
+    if (n == nullptr) {
+      return;
+    }
+    data_list.remove(n->data_ptr);
+
     // Go to the bottom level
-    skip_list_node<T> *b = n->bottom;
+    skip_list_node *b = n->bottom;
     while (b != nullptr) {
       n = b;
       b = n->bottom;
@@ -233,16 +294,18 @@ public:
   std::size_t get_size() { return size; }
 
   struct iterator {
+    friend class skip_list<T, L>;
     using iterator_category = std::bidirectional_iterator_tag;
+    using difference_type = std::ptrdiff_t;
     using value_type = T;
     using pointer = T *;
     using reference = T &;
 
-    skip_list_node<T> *curr;
-    skip_list_node<T> *prev;
+    skip_list_node *curr;
+    skip_list_node *prev;
 
   public:
-    explicit iterator(skip_list_node<T> *start) : curr(start), prev(nullptr){};
+    explicit iterator(skip_list_node *start) : curr(start), prev(nullptr){};
 
     iterator(const iterator &other) : curr(other.curr), prev(other.prev) {}
     iterator &operator=(const iterator &other) {
@@ -253,8 +316,8 @@ public:
       return *this;
     }
 
-    reference operator*() const { return curr->data; };
-    pointer operator->() const { return &curr->data; };
+    reference operator*() const { return curr->data_ptr->get(); };
+    pointer operator->() const { return &(curr->data_ptr->get()); };
     iterator &operator++() {
       prev = curr;
       curr = curr->next;

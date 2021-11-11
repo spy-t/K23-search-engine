@@ -30,7 +30,8 @@ tests = {
 	'list_test': [],
 	'optional_test': [],
 	'parser_test': ['src/lib/string.cpp'],
-	'hash_table_test': ['src/lib/hash.cpp', 'src/lib/string.cpp']
+	'hash_table_test': ['src/lib/hash.cpp', 'src/lib/string.cpp'],
+	'skip_list_test': ['src/lib/string.cpp']
 }
 global_test_deps = ['src/test/catch_amalgamated.cpp']
 
