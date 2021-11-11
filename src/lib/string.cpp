@@ -9,7 +9,7 @@
 
 namespace qs {
 
-string::string() : str(nullptr), capacity(0), length(0), is_alloced(false) {}
+string::string() : str(nullptr), capacity(0), length(0) {}
 
 string string::with_size(std::size_t cap) {
   qs::string s;
@@ -17,19 +17,7 @@ string string::with_size(std::size_t cap) {
   s.str = new char[cap + 1];
   s.str[0] = '\0';
   s.capacity = cap + 1;
-  s.is_alloced = true;
   s.length = 0;
-
-  return s;
-}
-
-string string::from_allocated_string(char *str) {
-  qs::string s;
-
-  s.str = str;
-  s.length = strlen(str);
-  s.capacity = s.length;
-  s.is_alloced = true;
 
   return s;
 }
@@ -41,23 +29,21 @@ string::string(const char *source) : string(source, strlen(source)) {}
 string::string(const char *source, size_t length) {
   this->length = length;
   str = new char[length + 1];
-  is_alloced = true;
   std::memcpy(str, source, length);
   str[length] = '\0';
   capacity = length + 1;
 }
+
 string::string(int num) {
   // Use the snprintf hack
   length = snprintf(0, 0, "%d", num);
 
   str = new char[length + 1];
-  is_alloced = true;
   snprintf(str, length + 1, "%d", num);
   capacity = length + 1;
 }
 
-string::string(const string &other)
-    : str(nullptr), length(other.length), is_alloced(true) {
+string::string(const string &other) : str(nullptr), length(other.length) {
   str = new char[other.length + 1];
   std::memcpy(str, other.str, other.length + 1);
   capacity = other.length + 1;
@@ -70,7 +56,6 @@ string &string::operator=(const string &other) {
     this->str = new char[other.length + 1];
     std::memcpy(this->str, other.str, other.length + 1);
     this->length = other.length;
-    this->is_alloced = true;
     this->capacity = other.length + 1;
   }
   return *this;
@@ -81,17 +66,15 @@ string &string::operator=(string &&other) {
     this->str = other.str;
     this->length = other.length;
     this->capacity = other.capacity;
-    this->is_alloced = other.is_alloced;
     other.str = nullptr;
     other.length = 0;
     other.capacity = 0;
-    other.is_alloced = false;
   }
   return *this;
 }
 
 string::~string() {
-  if (is_alloced) {
+  if (str != nullptr) {
     delete[] str;
   }
 }
@@ -117,11 +100,8 @@ string &string::operator+(const string &other) {
     auto new_str = new char[this->length + other.length + 1];
     std::memcpy(new_str, this->str, this->length);
     std::memcpy(new_str + this->length, other.str, other.length);
-    if (this->is_alloced) {
-      delete[] this->str;
-    }
+    delete[] this->str;
     this->str = new_str;
-    this->is_alloced = true;
     this->capacity = this->length + other.length + 1;
   }
   this->length = new_length;
