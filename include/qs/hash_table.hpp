@@ -171,7 +171,7 @@ public:
     // First check if an item with this key already exists in the bucket
     auto bucket = &get_bucket(key);
     for (auto &n : *bucket) {
-      if (n.get().keycmp(key)) {
+      if (n.keycmp(key)) {
         return;
       }
     }
@@ -192,7 +192,7 @@ public:
     // First check if an item with this key already exists in the bucket
     auto bucket = &get_bucket(key);
     for (auto &n : *bucket) {
-      if (n.get().keycmp(key)) {
+      if (n.keycmp(key)) {
         return;
       }
     }
