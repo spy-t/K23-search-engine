@@ -62,8 +62,14 @@ public:
   };
 
   // Move operations
-  vector(const vector &&other) noexcept : data(nullptr), size(0), capacity(0) {
-    *this = std::move(other);
+  vector(vector &&other) noexcept : data(nullptr), size(0), capacity(0) {
+    data = other.data;
+    size = other.size;
+    capacity = other.capacity;
+
+    other.data = nullptr;
+    other.size = 0;
+    other.capacity = 0;
   };
 
   vector &operator=(vector &&other) noexcept {
