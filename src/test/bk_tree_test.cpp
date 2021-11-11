@@ -68,8 +68,7 @@ SCENARIO("BK-Tree correct construction and matching") {
 
     WHEN("Looking up words near 'henn' with threshold 2") {
       THEN("'hell' and 'help' are found") {
-        auto words =
-            tree.match(2, qs::string("henn"));
+        auto words = tree.match(2, qs::string("henn"));
         REQUIRE(words.get_size() == 2);
         auto matched_words = words.get_data();
         REQUIRE(!std::strcmp(*(matched_words[0]), "hell"));
