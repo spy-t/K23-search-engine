@@ -27,16 +27,5 @@ template <typename Fn> void parse_string(char *stream, const char *del, Fn f) {
     f(entry);
   }
 }
-
-template <typename Fn> void parse_string(char *stream, const char *del, Fn f) {
-  char *token = nullptr;
-  while ((token = strsep(&stream, del)) != nullptr) {
-    if (*token == '\0')
-      continue;
-    qs::string entry(token);
-    f(entry);
-  }
-}
-
 } // namespace qs
 #endif // QS_PARSER_HPP
