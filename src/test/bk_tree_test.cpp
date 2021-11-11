@@ -4,6 +4,7 @@
 #include <qs/distances.hpp>
 #include <qs/list.hpp>
 #include <qs/string.h>
+#include <qs/vector.hpp>
 #include <type_traits>
 
 using sl =
@@ -22,40 +23,58 @@ void check_children(qs::bk_tree_node<qs::string> *node, const char *strings[],
       });
 }
 
-TEST_CASE("BK-Tree construction completes without errors and inserts nodes "
-          "correctly") {
-  GIVEN(
-      "A linked list of strings: [hell, help, fall, felt, fell, small, melt]") {
-    auto strings = new qs::linked_list<qs::string>();
-    strings->append(qs::string("hell"));
-    strings->append(qs::string("help"));
-    strings->append(qs::string("fall"));
-    strings->append(qs::string("felt"));
-    strings->append(qs::string("fell"));
-    strings->append(qs::string("small"));
-    strings->append(qs::string("melt"));
+SCENARIO("BK-Tree correct construction and matching") {
+  GIVEN("The strings: hell, help, fall, felt, fell, small, melt and using"
+        " hamming distance") {
+    auto tree = qs::bk_tree<qs::string>(qs::hamming_distance);
+    tree.insert(qs::string("hell"));
+    tree.insert(qs::string("help"));
+    tree.insert(qs::string("fall"));
+    tree.insert(qs::string("felt"));
+    tree.insert(qs::string("fell"));
+    tree.insert(qs::string("small"));
+    tree.insert(qs::string("melt"));
 
-    auto tree = qs::bk_tree<qs::string>(qs::hamming_distance, strings);
-    auto r = tree.get_root();
-    REQUIRE(!std::strcmp(*(r->get()), "hell"));
+    THEN("'hell' is the root") {
+      auto r = tree.get_root();
+      REQUIRE(!std::strcmp(*(r->get()), "hell"));
 
-    const char *children_strings[3] = {"help", "fall", "small"};
+      THEN("'hell' has 3 children: 'help', 'fall' and 'small'") {
+        const char *children_strings[3] = {"help", "fall", "small"};
 
-    check_children(r, children_strings, 3);
-    auto &children = r->get_children();
+        check_children(r, children_strings, 3);
 
-    auto help_node_iter = const_cast<sl &>(children).begin();
-    const char *help_children_strings[1] = {"fell"};
-    check_children(*help_node_iter, help_children_strings, 1);
+        THEN("'help' has 1 child: 'fell'") {
+          auto &children = r->get_children();
 
-    auto fall_node_iter = ++help_node_iter;
-    const char *fall_children_strings[2] = {"felt", "melt"};
-    check_children(*fall_node_iter, fall_children_strings, 2);
+          auto help_node_iter = const_cast<sl &>(children).begin();
+          const char *help_children_strings[1] = {"fell"};
+          check_children(*help_node_iter, help_children_strings, 1);
 
-    auto small_node_iter = ++fall_node_iter;
-    auto &small_children = (*small_node_iter)->get_children();
-    REQUIRE(const_cast<sl &>(small_children).get_size() == 0);
+          THEN("'fall' has 2 children: 'felt' and 'melt'") {
+            auto fall_node_iter = ++help_node_iter;
+            const char *fall_children_strings[2] = {"felt", "melt"};
+            check_children(*fall_node_iter, fall_children_strings, 2);
 
-    delete strings;
+            THEN("'small' has no children") {
+              auto small_node_iter = ++fall_node_iter;
+              auto &small_children = (*small_node_iter)->get_children();
+              REQUIRE(const_cast<sl &>(small_children).get_size() == 0);
+            }
+          }
+        }
+      }
+    }
+
+    WHEN("Looking up words near 'henn' with threshold 2") {
+      THEN("'hell' and 'help' are found") {
+        auto words =
+            tree.match(2, qs::string("henn"));
+        REQUIRE(words.get_size() == 2);
+        auto matched_words = words.get_data();
+        REQUIRE(!std::strcmp(*(matched_words[0]), "hell"));
+        REQUIRE(!std::strcmp(*(matched_words[1]), "help"));
+      }
+    }
   }
 }

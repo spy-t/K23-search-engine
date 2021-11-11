@@ -88,6 +88,13 @@ template <typename T> class bk_tree {
   distance_func<T> d;
   node_p root;
 
+public:
+  friend class bk_tree_node<T>;
+
+  explicit bk_tree(const distance_func<T> d) : d(d), root(nullptr) {}
+
+  ~bk_tree() { delete this->root; }
+
   void insert(T data) {
     if (this->root == nullptr) {
       this->root = new bk_tree_node<T>(data);
@@ -96,18 +103,7 @@ template <typename T> class bk_tree {
     }
   }
 
-public:
-  friend class bk_tree_node<T>;
-
-  bk_tree(const distance_func<T> df, linked_list<T> *l) : root(nullptr) {
-    functions::for_each(l->begin(), l->end(), [this, df](list_node<T> &curr) {
-      this->insert(curr.get(), df);
-    });
-  }
-
-  ~bk_tree() { delete this->root; }
-
-  qs::vector<T> &&match(int threshold, T query) const {
+  qs::vector<T> match(int threshold, T query) const {
     if (this->root == nullptr) {
       return qs::vector<T>(0);
     }
