@@ -15,15 +15,23 @@ TEST_CASE("Hamming distance") {
 }
 
 TEST_CASE("Edit distance") {
-  SECTION("Two strings: 'hell' and 'felt'") {
+  SECTION("'hell' and 'felt'") {
     REQUIRE(qs::edit_distance(qs::string("hell"), qs::string("felt")) == 2);
   };
 
-  SECTION("Two strings: 'ac' and 'abc'") {
-    REQUIRE(qs::edit_distance(qs::string("ac"), qs::string("abc")) == 2);
+  SECTION("'ac' and 'abc'") {
+    REQUIRE(qs::edit_distance(qs::string("ac"), qs::string("abc")) == 1);
   };
 
-  SECTION("Two strings: 'abc' and 'bc'") {
+  SECTION("'abc' and 'bc'") {
     REQUIRE(qs::edit_distance(qs::string("abc"), qs::string("bc")) == 1);
+  }
+
+  SECTION("'hell' and 'help'") {
+    REQUIRE(qs::edit_distance(qs::string("hell"), qs::string("help")) == 1);
+  }
+
+  SECTION("'help' and 'troop'") {
+    REQUIRE(qs::edit_distance(qs::string("help"), qs::string("troop")) == 4);
   }
 }

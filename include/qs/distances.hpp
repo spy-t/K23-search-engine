@@ -33,16 +33,16 @@ int edit_distance(qs::string s1, qs::string s2) {
     d[i][0] = i;
   }
 
-  for (int i = 0; i <= l2; i++) {
-    d[0][i] = i;
+  for (int j = 0; j <= l2; j++) {
+    d[0][j] = j;
   }
 
-  for (int j = 0; j < l2; j++) {
-    for (int i = 0; i < l1; i++) {
-      int substitution_cost = s1[i] == s2[j];
-      int deletion = d[i][j + 1] + 1;
-      int insertion = d[i + 1][j] + 1;
-      int substitution = d[i][j] + substitution_cost;
+  for (int i = 1; i <= l1; i++) {
+    for (int j = 1; j <= l2; j++) {
+      int substitution_cost = s1[i - 1] == s2[j - 1] ? 0 : 1;
+      int deletion = d[i - 1][j] + 1;
+      int insertion = d[i][j - 1] + 1;
+      int substitution = d[i - 1][j - 1] + substitution_cost;
 
       int min = deletion;
       if (insertion < min) {
@@ -51,7 +51,7 @@ int edit_distance(qs::string s1, qs::string s2) {
       if (substitution < min) {
         min = substitution;
       }
-      d[i + 1][j + 1] = min;
+      d[i][j] = min;
     }
   }
 
