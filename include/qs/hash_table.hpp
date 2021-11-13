@@ -241,8 +241,14 @@ public:
         return nullptr;
       }
       list_node<hash_table_item<V>> *current = buckets[offset].head;
-      while (current == nullptr && offset < buckets.get_size()) {
-        current = buckets[++offset].head;
+      if (current != nullptr) {
+        return current;
+      }
+      for (std::size_t i = offset + 1; i < buckets.get_size(); ++i) {
+        current = buckets[i].head;
+        if (current != nullptr) {
+          return current;
+        }
       }
 
       return current;
@@ -284,13 +290,13 @@ public:
       return *this;
     }
 
-    iterator &operator++(int) {
+    iterator operator++(int) {
       iterator old = *this;
       current = current->next();
       if (current == nullptr) {
         current = find_first_available(*buckets, ++offset);
         if (current == nullptr) {
-          return iterator(nullptr, buckets, buckets->get_size());
+          empty();
         }
       }
       return old;
