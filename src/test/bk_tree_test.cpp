@@ -76,4 +76,82 @@ SCENARIO("BK-Tree correct construction and matching") {
       }
     }
   }
+
+  GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop and using edit distance") {
+    auto tree = qs::bk_tree<qs::string>(qs::edit_distance);
+    tree.insert(qs::string("help"));
+    tree.insert(qs::string("hell"));
+    tree.insert(qs::string("hello"));
+    tree.insert(qs::string("loop"));
+    tree.insert(qs::string("helps"));
+    tree.insert(qs::string("shell"));
+    tree.insert(qs::string("helper"));
+    tree.insert(qs::string("cult"));
+    tree.insert(qs::string("troop"));
+    tree.insert(qs::string("helped"));
+
+    THEN("'help' is the root") {
+      auto r = tree.get_root();
+      REQUIRE(!std::strcmp(*(r->get()), "help"));
+
+      THEN("'help' has 4 children: 'hell', 'hello', 'loop' and 'troop'") {
+        const char *children_strings[4] = {"hell", "hello", "loop", "troop"};
+        check_children(r, children_strings, 4);
+
+        THEN("'hell' has 1 child: 'helps'") {
+          auto &children = r->get_children();
+
+          auto hell_node_iter = const_cast<sl &>(children).begin();
+          const char *hell_children_strings[1] = {"helps"};
+          check_children(*hell_node_iter, hell_children_strings, 1);
+
+          THEN("'hello' has 2 children: 'shell' and 'helper'") {
+            auto hello_node_iter = ++hell_node_iter;
+            const char *hello_children_strings[2] = {"shell", "helper"};
+            check_children(*hello_node_iter, hello_children_strings, 2);
+
+            THEN("'loop' has 1 child: 'cult'") {
+              auto loop_node_iter = ++hello_node_iter;
+              const char *loop_children_strings[1] = {"cult"};
+              check_children(*loop_node_iter, loop_children_strings, 1);
+
+              THEN("'troop' has no children") {
+                auto troop_node_iter = ++loop_node_iter;
+                auto &troop_children = troop_node_iter.curr->operator*()->get_children();
+                REQUIRE(const_cast<sl &>(troop_children).begin() == const_cast<sl &>(troop_children).end());
+              }
+            }
+          }
+        }
+      }
+    }
+
+    WHEN("Looking up words near 'helper' with threshold 0") {
+      THEN("'helper' is found") {
+        auto words = tree.match(0, qs::string("helper"));
+        REQUIRE(words.get_size() == 1);
+        auto matched_words = words.get_data();
+        REQUIRE(!std::strcmp(*(matched_words[0]), "helper"));
+      }
+    }
+
+    WHEN("Looking up words near 'poor' with threshold 3") {
+      THEN("'loop' and 'troop' are found") {
+        auto words = tree.match(3, qs::string("poor"));
+        REQUIRE(words.get_size() == 2);
+        auto matched_words = words.get_data();
+        REQUIRE(!std::strcmp(*(matched_words[0]), "loop"));
+        REQUIRE(!std::strcmp(*(matched_words[1]), "troop"));
+      }
+    }
+
+    WHEN("Looking up words near 'helped' with threshold 0") {
+      THEN("'helped' is found") {
+        auto words = tree.match(0, qs::string("helped"));
+        REQUIRE(words.get_size() == 1);
+        auto matched_words = words.get_data();
+        REQUIRE(!std::strcmp(*(matched_words[0]), "helped"));
+      }
+    }
+  }
 }
