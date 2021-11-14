@@ -30,7 +30,7 @@ public:
   string &operator=(const string &other);
 
   string(string &&other);
-  string &operator=(string &&other);
+  string &operator=(string &&other) noexcept ;
 
   ~string();
 
