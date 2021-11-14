@@ -35,6 +35,8 @@ TEST_CASE("optional behaves correctly") {
     auto opt_moved = std::move(opt);
     REQUIRE(opt_moved.get() == 5);
     REQUIRE(opt.is_empty());
+
+    REQUIRE(opt_moved.get_or(25) == 5);
   }
 
   SECTION("for trivially copyable types") {
@@ -50,6 +52,8 @@ TEST_CASE("optional behaves correctly") {
     auto opt_moved = std::move(opt);
     REQUIRE(opt_moved.get().x == 5);
     REQUIRE(opt.is_empty());
+
+    REQUIRE(opt_moved.get_or(trivial(25)).x == 5);
   }
 
   SECTION("for non trivially copyable types") {
@@ -65,6 +69,8 @@ TEST_CASE("optional behaves correctly") {
     auto opt_moved = std::move(opt);
     REQUIRE(opt_moved.get().x == 5);
     REQUIRE(opt.is_empty());
+
+    REQUIRE(opt_moved.get_or(non_trivial(25)).x == 5);
   }
 
   SECTION("for non copyable types") {
@@ -80,6 +86,8 @@ TEST_CASE("optional behaves correctly") {
     auto opt_moved = std::move(opt);
     REQUIRE(opt_moved.get()->x == 5);
     REQUIRE(opt.is_empty());
+
+    REQUIRE(opt_moved.get_or(qs::make_unique<trivial>(25))->x == 5);
 
     auto ptr_moved = std::move(opt_moved.get());
     REQUIRE(ptr_moved->x == 5);
@@ -98,6 +106,8 @@ TEST_CASE("optional behaves correctly") {
     auto opt_moved = std::move(opt);
     REQUIRE(*opt_moved.get() == 5);
     REQUIRE(opt.is_empty());
+
+    REQUIRE(*opt_moved.get_or(nullptr) == 5);
 
     delete ptr;
   }
