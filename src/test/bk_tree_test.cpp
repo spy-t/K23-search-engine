@@ -154,4 +154,13 @@ SCENARIO("BK-Tree correct construction and matching") {
       }
     }
   }
+
+  GIVEN("No strings") {
+    auto tree = qs::bk_tree<qs::string>(qs::hamming_distance);
+    REQUIRE(tree.get_root() == nullptr);
+    THEN("Matching returns nothing") {
+      auto words = tree.match(0, qs::string("str"));
+      REQUIRE(words.get_size() == 0);
+    }
+  }
 }
