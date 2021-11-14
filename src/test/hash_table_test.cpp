@@ -3,12 +3,24 @@
 #include <qs/memory.hpp>
 #include <qs/string.h>
 
+int remove_value(int *a, std::size_t size, int what) {
+  for (std::size_t i = 0; i < size; ++i) {
+    if (a[i] == what) {
+      a[i] = -1;
+      return i;
+    }
+  }
+  return -1;
+}
+
 TEST_CASE("hash table behaves as expected") {
   SECTION("hash table of primitives") {
     qs::hash_table<int> ht;
-    const int max = 100;
+    constexpr int max = 100;
+    int vals[max] = {0};
     for (int i = 0; i < max; ++i) {
       ht.insert((const uint8_t *)qs::string(i).get_buffer(), i);
+      vals[i] = i;
     }
     REQUIRE(ht.get_size() == max);
 
@@ -20,7 +32,8 @@ TEST_CASE("hash table behaves as expected") {
     REQUIRE(ht.lookup((const uint8_t *)"3") == ht.end());
 
     for (auto &n : ht) {
-      REQUIRE(*n < 100);
+      int remove_index = remove_value(vals, max, *n);
+      REQUIRE(remove_index != -1);
     }
   }
 

@@ -145,19 +145,13 @@ template <class V> class hash_table {
 public:
   struct iterator;
 
-  hash_table() : buckets(buckets_t(10)), size(0), capacity(10) {
+  hash_table() : buckets(buckets_t(get_prime(10))), size(0), capacity(10) {
     init_buckets(10);
   }
 
   explicit hash_table(std::size_t n_buckets)
       : buckets(buckets_t(n_buckets)), size(0), capacity(n_buckets) {
     init_buckets(n_buckets);
-  }
-
-  ~hash_table() {
-    /* for (std::size_t i = 0; i < capacity; ++i) { */
-    /*   delete buckets[i]; */
-    /* } */
   }
 
   std::size_t get_size() { return size; }
@@ -244,8 +238,8 @@ public:
       if (current != nullptr) {
         return current;
       }
-      for (std::size_t i = offset + 1; i < buckets.get_size(); ++i) {
-        current = buckets[i].head;
+      for (offset = offset + 1; offset < buckets.get_size(); ++offset) {
+        current = buckets[offset].head;
         if (current != nullptr) {
           return current;
         }
