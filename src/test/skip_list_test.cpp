@@ -43,5 +43,16 @@ SCENARIO("qs::skip_list behaves as expected") {
         }
       }
     }
+
+    WHEN("we insert 2 strings that are the same") {
+      sl.insert(data[0]);
+      sl.insert(data[0]);
+
+      THEN("only one instance of this string is found") {
+        REQUIRE(sl.get_size() == 1);
+        REQUIRE(!std::strcmp(**(sl.begin()), *(data[0])));
+        REQUIRE(++sl.begin() == sl.end());
+      }
+    }
   }
 }
