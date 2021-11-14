@@ -138,3 +138,23 @@ SCENARIO("String comparisons work") {
     }
   }
 }
+SCENARIO("String sanitize works") {
+  GIVEN("A simple string") {
+    qs::string s("SUPER.D");
+    WHEN("It is sanitized using {`.`} as remove set") {
+      s.sanitize(qs::string("."));
+      THEN("Fullstop should be removed") { REQUIRE(s == "SUPERD"); }
+    }
+  }
+  GIVEN("A more complex string") {
+    qs::string s("SUPER.D!d$dew&(*()");
+    WHEN("It is sanitized using {`.!$&()*`} as remove set") {
+      s.sanitize(qs::string(".!$&()*"));
+      THEN("Remove set should be removed") { REQUIRE(s == "SUPERDddew"); }
+    }
+    WHEN("It is sanitized using {`!$&.()*`} as remove set") {
+      s.sanitize(qs::string("!$&.()*"));
+      THEN("Remove set should be removed") { REQUIRE(s == "SUPERDddew"); }
+    }
+  }
+}

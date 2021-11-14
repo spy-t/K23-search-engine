@@ -4,6 +4,7 @@
 #include <qs/error.h>
 #include <qs/functions.hpp>
 #include <qs/string.h>
+#include <qs/vector.hpp>
 #include <stdexcept>
 #include <utility>
 
@@ -112,6 +113,18 @@ string &string::operator+(const string &other) {
   }
   this->length = new_length;
 
+  return *this;
+}
+
+string &string::sanitize(const string &remove_set) {
+  for (size_t i = 0; i < remove_set.length; i++) {
+    char *p;
+    while ((p = const_cast<char *>(
+                strchr(this->str, remove_set.get_buffer()[i]))) != nullptr) {
+      memmove(p, p + 1, (this->str + length) - (p));
+      length--;
+    }
+  }
   return *this;
 }
 

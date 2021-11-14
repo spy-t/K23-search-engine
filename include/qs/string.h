@@ -40,6 +40,7 @@ public:
   // Impure addition operation. Mutates the string in place
   string &operator+(const string &other);
 
+  string &sanitize(const string &remove_set);
   // Checked dereference operation
   char operator[](std::size_t index);
   // Unchecked dereference operation
