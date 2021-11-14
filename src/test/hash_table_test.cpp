@@ -38,4 +38,24 @@ TEST_CASE("hash table behaves as expected") {
     ht.remove((const uint8_t *)"3");
     REQUIRE(ht.lookup((const uint8_t *)"3") == ht.end());
   }
+
+  SECTION("empty hash table behaviour") {
+    auto ht = qs::hash_table<int>();
+    REQUIRE(ht.get_size() == 0);
+    REQUIRE(ht.begin() == ht.end());
+    ht.remove((const uint8_t *)"non-existent key");
+    REQUIRE(ht.get_size() == 0);
+  }
+
+  SECTION("hash table insert with the same key") {
+    const auto *key = reinterpret_cast<const uint8_t *>("key1");
+    int value = 1;
+    auto ht = qs::hash_table<int>();
+    ht.insert(key, value);
+    REQUIRE(ht.get_size() == 1);
+    REQUIRE((*ht.lookup(key)).get() == value);
+    ht.insert(key, 2);
+    REQUIRE(ht.get_size() == 1);
+    REQUIRE((*ht.lookup(key)).get() == 1);
+  }
 }
