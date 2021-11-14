@@ -1,5 +1,7 @@
 # K23 SEARCH
 
+## [ΓΙΑ ΤΟΥΣ ΕΞΕΤΑΣΤΕΣ](./docs/REPORTS.md)
+
 ## Dependencies
 
 - meson
