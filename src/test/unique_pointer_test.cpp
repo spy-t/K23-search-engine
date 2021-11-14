@@ -25,5 +25,10 @@ TEST_CASE("unique pointer works and correctly deallocates memory") {
         qs::make_unique<int_wrapper>(10);
 
     REQUIRE(intwrapperptr->get() == 10);
+
+    SECTION("throws when moved") {
+      auto newwrapperptr = std::move(intwrapperptr);
+      REQUIRE_THROWS(intwrapperptr->get());
+    }
   }
 }
