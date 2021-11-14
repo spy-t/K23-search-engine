@@ -66,7 +66,7 @@ string &string::operator=(const string &other) {
   return *this;
 }
 
-string &string::operator=(string &&other)  noexcept {
+string &string::operator=(string &&other) noexcept {
   if (this != &other) {
     delete[] str;
     this->str = other.str;

@@ -144,7 +144,10 @@ TEST_CASE("vector runtime exceptions behave correctly") {
   auto v = construct_vector<int>(5, construct_int);
 
   SECTION("out of bounds set (rvalue)") { REQUIRE_THROWS(v.set(100, 10)); }
-  SECTION("out of bounds set (reference)") { auto x = 10; REQUIRE_THROWS(v.set(100, x)); }
+  SECTION("out of bounds set (reference)") {
+    auto x = 10;
+    REQUIRE_THROWS(v.set(100, x));
+  }
   SECTION("out of bounds dereference") { REQUIRE_THROWS(v.at(6)); }
 }
 

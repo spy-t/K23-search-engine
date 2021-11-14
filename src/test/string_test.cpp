@@ -79,11 +79,13 @@ SCENARIO("String copy & move semantics work") {
 
 SCENARIO("String indexing works") {
   GIVEN("An empty string") {
-    qs:: string s("");
+    qs::string s("");
 
     WHEN("It is dereferenced") {
       THEN("'String is empty' exception is thrown") {
-        REQUIRE_THROWS_MATCHES(s[0], std::runtime_error, Catch::Matchers::Message("Invalid index. String is empty"));
+        REQUIRE_THROWS_MATCHES(
+            s[0], std::runtime_error,
+            Catch::Matchers::Message("Invalid index. String is empty"));
       }
     }
   }
