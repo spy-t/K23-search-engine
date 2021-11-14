@@ -127,6 +127,10 @@ string &string::sanitize(const string &remove_set) {
   }
   return *this;
 }
+string string::pure_sanitize(const string &remove_set){
+    string s(*this);
+    return s.sanitize(remove_set);
+}
 
 char string::operator[](std::size_t index) {
   if (this->length == 0) {

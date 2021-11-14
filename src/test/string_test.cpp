@@ -156,5 +156,12 @@ SCENARIO("String sanitize works") {
       s.sanitize(qs::string("!$&.()*"));
       THEN("Remove set should be removed") { REQUIRE(s == "SUPERDddew"); }
     }
+
+    WHEN("It is pure sanitized using {`!$&.()*`} as remove set") {
+      qs::string t = s.pure_sanitize(qs::string("!$&.()*"));
+      THEN("Remove set should be removed on new qs::string t and string s should be the same"){
+        REQUIRE((t == "SUPERDddew" && s == "SUPER.D!d$dew&(*()"));
+      }
+    }
   }
 }
