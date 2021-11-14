@@ -42,6 +42,11 @@ TEST_CASE("vector push behaves correctly") {
     }
     v.set(0, 10);
     REQUIRE(v.at(0) == 10);
+    v.set(v.get_size(), -1);
+    REQUIRE(v.at(v.get_size() - 1) == -1);
+    int x = -2;
+    v.set(v.get_size(), x);
+    REQUIRE(v.at(v.get_size() - 1) == -2);
   }
 
   SECTION("a vector of owned objects") {
@@ -56,6 +61,12 @@ TEST_CASE("vector push behaves correctly") {
     obj o(10, 10);
     v.set(0, o);
     REQUIRE(v.at(0) == o);
+
+    v.set(v.get_size(), obj(-1, -1));
+    REQUIRE(v.at(v.get_size() - 1) == obj(-1, -1));
+    obj o2(-2, -2);
+    v.set(v.get_size(), o2);
+    REQUIRE(v.at(v.get_size() - 1) == obj(-2, -2));
   }
 
   SECTION("a vector of unique pointers") {
@@ -69,6 +80,9 @@ TEST_CASE("vector push behaves correctly") {
     auto o = construct_pointer_obj(10);
     v.set(0, std::move(o));
     REQUIRE(*v.at(0) == obj(10, 10));
+    v.set(v.get_size(), construct_pointer_obj(-1));
+    REQUIRE(*v.at(v.get_size() - 1) == obj(-1, -1));
+    // no copy is allowed on unique_ptr
   }
 }
 
@@ -126,10 +140,11 @@ TEST_CASE("vector resizing behaves correctly") {
   }
 }
 
-TEST_CASE("vector runtime excpetions behave correctly") {
+TEST_CASE("vector runtime exceptions behave correctly") {
   auto v = construct_vector<int>(5, construct_int);
 
-  SECTION("out of bounds set") { REQUIRE_THROWS(v.set(100, 10)); }
+  SECTION("out of bounds set (rvalue)") { REQUIRE_THROWS(v.set(100, 10)); }
+  SECTION("out of bounds set (reference)") { auto x = 10; REQUIRE_THROWS(v.set(100, x)); }
   SECTION("out of bounds dereference") { REQUIRE_THROWS(v.at(6)); }
 }
 
@@ -137,7 +152,7 @@ TEST_CASE("vector copying and moving behaves correctly") {
   auto v = construct_vector<int>(5, construct_int);
   SECTION("assignment") {
     SECTION("copy") {
-      auto v_copy = v.operator=(v);
+      auto v_copy = v;
       REQUIRE(v.get_size() == v_copy.get_size());
       for (std::size_t i = 0; i < v.get_size(); ++i) {
         REQUIRE(v[i] == v_copy[i]);
