@@ -2,6 +2,7 @@
 #define QS_DISTANCES_HPP
 
 #include <qs/string.h>
+#include <qs/functions/ops.hpp>
 
 namespace qs {
 
@@ -9,7 +10,7 @@ int hamming_distance(qs::string s1, qs::string s2) {
   int dist = 0;
   std::size_t len1 = s1.get_length();
   std::size_t len2 = s2.get_length();
-  std::size_t min_len = len1 < len2 ? len1 : len2;
+  std::size_t min_len = qs::functions::min(len1, len2);
 
   for (std::size_t i = 0; i < min_len; i++) {
     if (s1[i] != s2[i]) {
@@ -44,13 +45,7 @@ int edit_distance(qs::string s1, qs::string s2) {
       int insertion = d[i][j - 1] + 1;
       int substitution = d[i - 1][j - 1] + substitution_cost;
 
-      int min = deletion;
-      if (insertion < min) {
-        min = insertion;
-      }
-      if (substitution < min) {
-        min = substitution;
-      }
+      int min = qs::functions::min(deletion, qs::functions::min(insertion, substitution));
       d[i][j] = min;
     }
   }
