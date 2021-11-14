@@ -32,7 +32,8 @@ tests = {
 	'parser_test': ['src/lib/string.cpp'],
 	'hash_table_test': ['src/lib/hash.cpp', 'src/lib/string.cpp'],
 	'skip_list_test': ['src/lib/string.cpp'],
-	'ops_test': []
+	'ops_test': [],
+	'deduplication_test': ['src/lib/string.cpp','src/lib/hash_set.cpp','src/lib/hash.cpp']
 }
 global_test_deps = ['src/test/catch_amalgamated.cpp']
 
