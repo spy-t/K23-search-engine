@@ -8,6 +8,17 @@ project('search', 'cpp',
 
 include = include_directories('include')
 
+libqs_src = [
+	'src/lib/bloom.cpp',
+	'src/lib/distances.cpp',
+	'src/lib/hash.cpp',
+	'src/lib/hash_set.cpp',
+	'src/lib/sstream.cpp',
+	'src/lib/string.cpp'
+]
+
+libqs_static = static_library('libqs', libqs_src, include_directories : include)
+
 # TODO(spyros): Turn this on when needed
 # search_src = [
 # 	'src/bin/search.cpp',
@@ -19,27 +30,29 @@ include = include_directories('include')
 # 	include_directories : include,
 # 	override_options : ['warning_level=3'])
 
-tests = {
-	'string_test': ['src/lib/string.cpp'],
-	'sstream_test': ['src/lib/sstream.cpp', 'src/lib/string.cpp'],
-	'bk_tree_test': ['src/lib/string.cpp'],
-	'vector_test': ['src/lib/string.cpp'],
-	'distances_test': ['src/lib/string.cpp'],
-	'unique_pointer_test': [],
-	'hash_set_test': ['src/lib/hash_set.cpp','src/lib/string.cpp','src/lib/hash.cpp'],
-	'list_test': [],
-	'optional_test': [],
-	'parser_test': ['src/lib/string.cpp'],
-	'hash_table_test': ['src/lib/hash.cpp', 'src/lib/string.cpp'],
-	'skip_list_test': ['src/lib/string.cpp'],
-	'ops_test': [],
-	'deduplication_test': ['src/lib/string.cpp','src/lib/hash_set.cpp','src/lib/hash.cpp']
-}
+tests = [
+	'string_test',
+	'sstream_test',
+	'bk_tree_test',
+	'vector_test',
+	'distances_test',
+	'unique_pointer_test',
+	'hash_set_test',
+	'list_test',
+	'optional_test',
+	'parser_test',
+	'hash_table_test',
+	'skip_list_test',
+	'ops_test',
+	'deduplication_test'
+]
+
 global_test_deps = ['src/test/catch_amalgamated.cpp']
 
-foreach test_name, test_deps : tests
+foreach test_name : tests
 	t = executable(test_name,
-		sources : ['src/test/@0@.cpp'.format(test_name)] + test_deps + global_test_deps,
+		sources : ['src/test/@0@.cpp'.format(test_name)] + global_test_deps,
+		link_with : libqs_static,
 		include_directories : include,
 		cpp_args: '-DDEBUG'
 	)
