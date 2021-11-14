@@ -13,4 +13,3 @@ TEST_CASE("qs::functions::find") {
     REQUIRE(*result == *(v.end()));
   }
 }
-

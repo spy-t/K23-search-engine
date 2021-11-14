@@ -1,8 +1,8 @@
 #ifndef QS_DISTANCES_HPP
 #define QS_DISTANCES_HPP
 
-#include <qs/string.h>
 #include <qs/functions/ops.hpp>
+#include <qs/string.h>
 
 namespace qs {
 
@@ -45,7 +45,8 @@ int edit_distance(qs::string s1, qs::string s2) {
       int insertion = d[i][j - 1] + 1;
       int substitution = d[i - 1][j - 1] + substitution_cost;
 
-      int min = qs::functions::min(deletion, qs::functions::min(insertion, substitution));
+      int min = qs::functions::min(deletion,
+                                   qs::functions::min(insertion, substitution));
       d[i][j] = min;
     }
   }

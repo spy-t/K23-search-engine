@@ -63,7 +63,8 @@ TEST_CASE("Linked list behaves as expected") {
     WHEN("we prepend on the second node") {
       auto prev_node = l.head->next();
       l.prepend(-1, *prev_node);
-      THEN("the node has been prepended after the head and before the second node") {
+      THEN("the node has been prepended after the head and before the second "
+           "node") {
         REQUIRE(l.get_size() == maxi + 1);
         auto n = l.head;
         REQUIRE(n->get() == 0);

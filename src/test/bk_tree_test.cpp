@@ -77,7 +77,8 @@ SCENARIO("BK-Tree correct construction and matching") {
     }
   }
 
-  GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop and using edit distance") {
+  GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop and "
+        "using edit distance") {
     auto tree = qs::bk_tree<qs::string>(qs::edit_distance);
     tree.insert(qs::string("help"));
     tree.insert(qs::string("hell"));
@@ -117,8 +118,10 @@ SCENARIO("BK-Tree correct construction and matching") {
 
               THEN("'troop' has no children") {
                 auto troop_node_iter = ++loop_node_iter;
-                auto &troop_children = troop_node_iter.curr->operator*()->get_children();
-                REQUIRE(const_cast<sl &>(troop_children).begin() == const_cast<sl &>(troop_children).end());
+                auto &troop_children =
+                    troop_node_iter.curr->operator*()->get_children();
+                REQUIRE(const_cast<sl &>(troop_children).begin() ==
+                        const_cast<sl &>(troop_children).end());
               }
             }
           }
