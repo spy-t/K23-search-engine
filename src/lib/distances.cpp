@@ -6,12 +6,6 @@ int hamming_distance(qs::string s1, qs::string s2) {
   int dist = 0;
   std::size_t len1 = s1.get_length();
   std::size_t len2 = s2.get_length();
-  if (len1 != len2) {
-    // TODO(spyros): This should be an assertion. Change this when the assertion
-    // system is in place
-    throw std::runtime_error("cannot find hamming distance between two strings "
-                             "of differenct lengths");
-  }
   std::size_t min_len = qs::functions::min(len1, len2);
 
   for (std::size_t i = 0; i < min_len; i++) {
