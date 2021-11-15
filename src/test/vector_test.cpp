@@ -1,6 +1,7 @@
 #include "catch_amalgamated.hpp"
 
 #include <qs/memory.hpp>
+#include <qs/string.h>
 #include <qs/vector.hpp>
 #include <utility>
 
@@ -27,6 +28,7 @@ obj construct_obj(std::size_t i) { return obj(i, i); }
 qs::unique_pointer<obj> construct_pointer_obj(std::size_t i) {
   return qs::make_unique<obj>(i, i);
 }
+qs::string construct_string(std::size_t i) { return qs::string(i); }
 
 qs::vector<int> f(qs::vector<int> v) { return v; }
 
@@ -152,7 +154,10 @@ TEST_CASE("vector runtime exceptions behave correctly") {
 }
 
 TEST_CASE("vector copying and moving behaves correctly") {
-  auto v = construct_vector<int>(5, construct_int);
+  qs::vector<qs::string> v(5);
+  for (int i = 0; i < 5; ++i) {
+    v.push(qs::string(i));
+  }
   SECTION("assignment") {
     SECTION("copy") {
       auto v_copy = v;
@@ -163,7 +168,7 @@ TEST_CASE("vector copying and moving behaves correctly") {
     }
 
     SECTION("move") {
-      qs::vector<int> v_moved;
+      qs::vector<qs::string> v_moved;
       v_moved = std::move(v);
       REQUIRE(v.get_size() == 0);
       REQUIRE(v_moved.get_size() == 5);
@@ -173,7 +178,7 @@ TEST_CASE("vector copying and moving behaves correctly") {
 
   SECTION("construction") {
     SECTION("copy") {
-      qs::vector<int> v_copy(v);
+      qs::vector<qs::string> v_copy(v);
       REQUIRE(v.get_size() == v_copy.get_size());
       for (std::size_t i = 0; i < v.get_size(); ++i) {
         REQUIRE(v[i] == v_copy[i]);
@@ -181,8 +186,8 @@ TEST_CASE("vector copying and moving behaves correctly") {
     }
 
     SECTION("move") {
-      qs::vector<int> v_moved(
-          std::move(construct_vector<int>(5, construct_int)));
+      qs::vector<qs::string> v_moved(
+          std::move(construct_vector<qs::string>(5, construct_string)));
       REQUIRE(v_moved.get_size() == 5);
     }
   }

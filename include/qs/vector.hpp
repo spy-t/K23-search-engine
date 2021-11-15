@@ -40,17 +40,18 @@ public:
       : data(new T_storage[capacity]), size(0), capacity(capacity) {}
 
   // Copy operations
-  vector(const vector &other)
+  vector(vector &other)
       : data(new T_storage[other.capacity]), size(other.size),
         capacity(other.capacity) {
-    functions::copy_uninitialized(other.data, other.data + other.size, data);
+    functions::copy_uninitialized(other.begin(), other.end(), this->begin());
   }
-  vector &operator=(const vector &other) {
+  vector &operator=(vector &other) {
     if (this != &other) {
       T_storage *new_data = new T_storage[other.capacity];
       T_storage *old_data = data;
-      functions::copy_uninitialized(other.data, other.data + other.size,
-                                    new_data);
+      functions::copy_uninitialized(
+          other.begin(), other.end(),
+          std::launder(reinterpret_cast<T *>(new_data)));
       data = new_data;
       capacity = other.capacity;
       size = other.size;
