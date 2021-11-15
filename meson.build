@@ -52,7 +52,7 @@ global_test_deps = ['src/test/catch_amalgamated.cpp']
 
 foreach test_name : tests
 	t = executable(test_name,
-		sources : ['src/test/@0@.cpp'.format(test_name)] + global_test_deps,
+		sources : ['src/test/@0@.cpp'.format(test_name)],
 		link_with : libqs_static,
 		include_directories : include,
 		cpp_args: '-DDEBUG'

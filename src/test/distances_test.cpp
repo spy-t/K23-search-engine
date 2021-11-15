@@ -1,3 +1,4 @@
+#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 
 #include <qs/distances.hpp>
@@ -9,7 +10,8 @@ TEST_CASE("Hamming distance") {
   };
 
   SECTION("Two strings: 'when' and 'whenever'") {
-    REQUIRE_THROWS(qs::hamming_distance(qs::string("when"), qs::string("whenever")));
+    REQUIRE_THROWS(
+        qs::hamming_distance(qs::string("when"), qs::string("whenever")));
   }
 }
 

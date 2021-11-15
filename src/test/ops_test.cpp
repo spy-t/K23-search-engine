@@ -1,3 +1,4 @@
+#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 
 #include <qs/functions/ops.hpp>

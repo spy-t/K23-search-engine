@@ -1,3 +1,4 @@
+#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 #include <qs/hash_table.hpp>
 #include <qs/memory.hpp>

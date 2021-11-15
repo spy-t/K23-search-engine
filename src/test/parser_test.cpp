@@ -1,7 +1,9 @@
+#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 #include <cstdio>
 #include <qs/parser.hpp>
 #include <qs/string.h>
+
 TEST_CASE("Parse file line by line") {
   SECTION("SMALL TEST") {
     const char *filepath = "../src/test/resources/small_test.txt";
