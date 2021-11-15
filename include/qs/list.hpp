@@ -222,11 +222,6 @@ public:
     delete node;
   }
 
-  qs::optional<V> find(V data) {
-    list_node<V> *ln = this->_find(this->head_node, data, false);
-    return ln != nullptr ? optional(ln->get()) : optional<V>();
-  }
-
   struct iterator {
     using iterator_category = std::bidirectional_iterator_tag;
     using difference_type = std::ptrdiff_t;
