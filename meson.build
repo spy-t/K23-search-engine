@@ -17,7 +17,7 @@ libqs_src = [
 	'src/lib/string.cpp'
 ]
 
-libqs_static = static_library('libqs', libqs_src, include_directories : include)
+libqs_static = static_library('qs', libqs_src, include_directories : include)
 
 # TODO(spyros): Turn this on when needed
 # search_src = [
