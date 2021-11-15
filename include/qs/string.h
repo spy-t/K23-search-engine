@@ -44,8 +44,11 @@ public:
 
   string pure_sanitize(const string &remove_set);
 
-  // Checked dereference operation
+  // Unchecked index operation
   char operator[](std::size_t index);
+  // Checked index operation
+  char at(std::size_t index);
+
   // Unchecked dereference operation
   char *operator*();
 

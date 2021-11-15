@@ -134,7 +134,9 @@ string string::pure_sanitize(const string &remove_set) {
   return s.sanitize(remove_set);
 }
 
-char string::operator[](std::size_t index) {
+char string::operator[](std::size_t index) { return this->str[index]; }
+
+char string::at(std::size_t index) {
   if (this->length == 0) {
     throw std::runtime_error("Invalid index. String is empty");
   }
