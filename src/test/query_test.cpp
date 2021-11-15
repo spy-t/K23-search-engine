@@ -66,9 +66,17 @@ SCENARIO("main") {
   qs::parse_file(qf, '\n',
                  [&set](const qs::string &entry) { set.insert(entry); });
   fclose(qf);
-  auto entry_list = qs::linked_list<qs::entry<char>>();
+  auto entry_list = qs::skip_list<qs::entry<char>, 16>(
+      [](const qs::entry<char> &a, const qs::entry<char> &b) {
+        if (a.word == b.word) {
+          return 0;
+        }
+
+        return a.word > b.word ? -1 : 1;
+      });
+
   for (auto &e : set) {
-    entry_list.append(qs::entry(e, '\0'));
+    entry_list.insert(qs::entry(e, '\0'));
   }
   qs::bk_tree<qs::entry<char>> bk(entry_list, dist);
 

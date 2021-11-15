@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <functional>
 #include <qs/list.hpp>
 #include <qs/optional.hpp>
 #include <random>
@@ -14,8 +15,7 @@ template <class T, std::size_t L> class skip_list;
 
 template <class T, std::size_t L> class skip_list {
   class skip_list_node;
-  using sl_compare_func =
-      typename std::add_pointer<int(const T &, const T &)>::type;
+  using sl_compare_func = std::function<int(const T &, const T &)>;
 
   std::size_t levels = L;
   std::size_t size;
@@ -161,8 +161,8 @@ template <class T, std::size_t L> class skip_list {
 
 public:
   struct iterator;
-  explicit skip_list(sl_compare_func fn)
-      : size(0), rng(std::time(nullptr)), cmp(fn) {
+  template <typename F>
+  explicit skip_list(F fn) : size(0), rng(std::time(nullptr)), cmp(fn) {
     for (std::size_t i = 0; i < levels; ++i) {
       nodes[i] = nullptr;
     }

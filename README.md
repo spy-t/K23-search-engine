@@ -77,3 +77,26 @@ To lint the project and scan for common mistakes run
 ```bash
 ninja -C build scan-build
 ```
+
+## Micro benchmarks
+
+
+| threshold   | order    | time   |
+|-------------|----------|--------|
+| 0           | random   | 2s     |
+| 0           | min      | 2s     |
+| 0           | max      | 2s     |
+| ----------- | -------- | ------ |
+| 1           | random   | 8s     |
+| 1           | min      | 7s     |
+| 1           | max      | 7s     |
+| ----------- | -------- | ------ |
+| 2           | random   | 17s    |
+| 2           | min      | 14s    |
+| 2           | max      | 13s    |
+| ----------- | -------- | ------ |
+| 3           | random   | 27s    |
+| 3           | min      | 22s    |
+| 3           | max      | 21s    |
+
+So the winner by a very small margin is max ordering (may matter for very large thresholds)
