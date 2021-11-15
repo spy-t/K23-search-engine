@@ -1,5 +1,39 @@
 # Report 1
 
+## Building
+
+Ρωτήσαμε τον κ Πασκαλή για το αν μπορούμε να χρησιμοποιήσουμε το `meson` για να
+κάνουμε build την εργασία και μας απάντησε στο [piazza](https://piazza.com/class/kumt6ax3p6734v?cid=11_f1)
+πως δεν υπάρχει πρόβλημα αν και εφόσον μπορούμε να το εγκαταστήσουμε στα linux
+της σχολής. Έπειτα απο συννενόηση με την admin καταφέραμε και το εγκαταστήσαμε
+στο linux30.di.uoa.gr όπου είναι και το μόνο Ubuntu 20.04 το οποίο έχει version
+του meson που μας καλύπτει. Οδηγίες για την χρήση του υπάρχουν στο κεντρικό
+readme αλλά ξαναγράφω κάποιο βασικά πράγματα εδώ για παν ενδεχόμενο. Η εργασία
+έχει γίνει build και τρέχει με επιτυχία στο linux30.di.uoa.gr.
+
+- Initialize
+```bash
+meson build
+```
+
+- Build
+```bash
+cd build && ninja
+```
+
+- Test
+```bash
+cd build && meson test <test_name> # η meson test αν θέλουμε να τρέξουν όλα τα test
+```
+
+- Leak checks με το AddressSanitizer
+```bash
+# Μετα απο αυτό κάνουμε recompile και όλα τα test τρέχουν τον address sanitizer
+cd build && meson configure -Db_sanitize=address
+```
+
+## Deliverables
+
 Το ζητούμενο API μετασχηματίστηκε έτσι ώστε να χρησιμοποιεί ένα πιο ιδιοματικό
 C++ στυλ με RAII, templates, iterators και exceptions για error handling. Το mapping είναι
 ως εξής:
@@ -34,27 +68,27 @@ C++ στυλ με RAII, templates, iterators και exceptions για error hand
 
 Ακολουθούν κάποια design choices που πήραμε και κάποιες παραδοχές...
 
-## Deduplication
+### Deduplication
 
 Το deduplication υλοποιείται απλά με ένα hash set στο οποίο μπαίνει ότι
 διαβάζεται με αποτέλεμσα να υπάρχουν όλες οι λέξεις το πολύ μια φορά όταν βγουν.
 
-## Entry list
+### Entry list
 
 Το entry list είναι ένα απλό doubly linked list
 
-## BK tree
+### BK tree
 
 Τα κάθε node του bk tree κρατάει τα παιδιά του σε ένα skip list έτσι ώστε να
 είναι ταξινομημένα γιατί TODO(yannis): εξήγησε γιατί
 
-## Testing
+### Testing
 
 Για τα τεστ χρησιμοποιήσαμε το catch2 το οποίο μας ανάγκασε στο `query_test` να
 χρησιμοποιήσουμε το `std::string` του STL. Επειδή είναι σε τεστ κώδικα δεν
 θεωρήσαμε οτι υπάρχει πρόβλημα με αυτό.
 
-### End to end test
+#### End to end test
 
 Το `query_test` είναι ένα τεστ το οποίο εξετάζει ολιστικά τα ζητούμενα της
 εργασίας. Επειδή χρειάζεται command line options για να λειτουργήσει όταν τρέχει
@@ -70,6 +104,10 @@ C++ στυλ με RAII, templates, iterators και exceptions για error hand
 hamming distance.
 
 Έχωντας τα προαπαιτούμενα μετά μπορούμε απο το `build` directory να τρέξουμε πχ
+(αυτό το τέστ ενδεχομένος να πάρει αρκετή ώρα γιατί το word file έχει μέγεθος
+1.3 MB. Αν παίρνει υπερβολικά πολύ ώρα για να είναι χρήσιμο τότε μπορείτε να το
+τρέξετε με κάποιο συνδυασμο απο τα files που έχουν παραχθεί για το hamming
+distance test)
 `./query_test --queries path/to/query_list --words path/to/word_list --threshold 3 --distance edit`
 
 **ΠΡΟΣΟΧΗ**: αν δεν μπει το `threshold` flag τότε το τεστ θα κάνει pass
