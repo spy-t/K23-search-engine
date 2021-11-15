@@ -11,6 +11,7 @@
 
 #include <qs/hash.h>
 #include <qs/list.hpp>
+#include <qs/string.h>
 #include <qs/vector.hpp>
 
 namespace qs {
@@ -20,48 +21,36 @@ template <class V> class hash_table;
 
 template <class V> class hash_table_item {
   V value;
-  uint8_t *key;
+  qs::string key;
 
   friend class hash_table<V>;
 
-  bool operator==(hash_table_item<V> &other) {
-    return strcmp((const char *)this->key, (const char *)other.key) == 0;
-  }
-  bool keycmp(const uint8_t *other) {
-    return strcmp((const char *)this->key, (const char *)other) == 0;
-  }
+  bool operator==(hash_table_item<V> &other) { return this->key == other.key; }
+  bool keycmp(const qs::string &other) { return this->key == other; }
+  bool keycmp(const char *other) { return this->key == other; }
 
-  explicit hash_table_item(const uint8_t *k, V &value) : value(value) {
-    const char *kk = (const char *)k;
-    key = (uint8_t *)strdup(kk);
-  }
-  explicit hash_table_item(const uint8_t *k, V &&value)
-      : value(std::move(value)) {
-    const char *kk = (const char *)k;
-    key = (uint8_t *)strdup(kk);
-  }
+  explicit hash_table_item(const qs::string &k, V &value)
+      : value(value), key(k) {}
+  explicit hash_table_item(qs::string &&k, V &&value)
+      : value(std::move(value)), key(std::move(k)) {}
 
 public:
-  ~hash_table_item() { free(key); }
   // No copy
   hash_table_item(const hash_table_item<V> &other) = delete;
   hash_table_item &operator=(const hash_table_item<V> &other) = delete;
 
   hash_table_item(hash_table_item<V> &&other)
-      : value(std::move(other.value)), key(other.key) {
-    other.key = nullptr;
-  };
+      : value(std::move(other.value)), key(std::move(other.key)) {}
   hash_table_item &operator=(hash_table_item<V> &&other) {
     this->value = std::move(other.value);
-    this->key = other.key;
-    other.key = nullptr;
+    this->key = std::move(other.key);
 
     return *this;
   };
 
   V &get() { return value; }
   V &operator*() { return value; }
-  const uint8_t *get_key() const { return key; }
+  const qs::string &get_key() const { return key; }
 };
 
 template <class V> class hash_table {
@@ -97,18 +86,32 @@ template <class V> class hash_table {
     }
   }
 
-  qs::linked_list<hash_table_item<V>> &get_bucket(const uint8_t *key) {
-    uint64_t hash = djb2(key) % capacity;
+  qs::linked_list<hash_table_item<V>> &get_bucket(const qs::string &key) {
+    return get_bucket(key.get_buffer());
+  }
+
+  qs::linked_list<hash_table_item<V>> &get_bucket(const char *key) {
+    uint64_t hash = djb2((const uint8_t *)key) % capacity;
     return buckets[hash];
   }
 
-  list_node<hash_table_item<V>> *get_by_key(const uint8_t *key) {
+  list_node<hash_table_item<V>> *get_by_key(const qs::string &key) {
+    get_by_key(key.get_buffer());
+  }
+
+  list_node<hash_table_item<V>> *get_by_key(const char *key) {
     auto bucket = get_bucket(key);
     return get_by_key(bucket, key);
   }
 
   list_node<hash_table_item<V>> *
-  get_by_key(qs::linked_list<hash_table_item<V>> &bucket, const uint8_t *key) {
+  get_by_key(qs::linked_list<hash_table_item<V>> &bucket,
+             const qs::string &key) {
+    return get_by_key(bucket, key.get_buffer());
+  }
+
+  list_node<hash_table_item<V>> *
+  get_by_key(qs::linked_list<hash_table_item<V>> &bucket, const char *key) {
     auto iter = bucket.head;
     while (iter != nullptr) {
       if (iter->get().keycmp(key)) {
@@ -132,7 +135,8 @@ template <class V> class hash_table {
       auto &bucket = buckets[i];
       auto iter = bucket.head;
       while (iter != nullptr) {
-        auto hash = djb2(iter->get().key) % new_cap;
+        auto hash =
+            djb2((const uint8_t *)iter->get().key.get_buffer()) % new_cap;
         auto &new_bucket = new_vec[hash];
         new_bucket.append(std::move(iter->get()));
         iter = iter->next();
@@ -160,12 +164,31 @@ public:
     return (const uint8_t *)k;
   }
 
-  void insert(const uint8_t *key, V &&value) {
+  void insert(qs::string &&key, V &&value) {
+    insert(hash_table_item<V>(std::move(key), std::move(value)));
+  }
 
+  void insert(const qs::string &key, V &value) {
+    insert(hash_table_item<V>(key, value));
+  }
+
+  void insert(const qs::string &key, V &&value) {
+    insert(hash_table_item<V>(key, std::move(value)));
+  }
+
+  void insert(const char *key, V &value) {
+    insert(hash_table_item<V>(qs::string(key), value));
+  }
+
+  void insert(const char *key, V &&value) {
+    insert(hash_table_item<V>(qs::string(key), std::move(value)));
+  }
+
+  void insert(hash_table_item<V> &&i) {
     // First check if an item with this key already exists in the bucket
-    auto bucket = &get_bucket(key);
+    auto bucket = &get_bucket(i.key);
     for (auto &n : *bucket) {
-      if (n.keycmp(key)) {
+      if (n.keycmp(i.key)) {
         return;
       }
     }
@@ -174,36 +197,17 @@ public:
       resize();
       // Relocate the bucket because after the resize it might point to an
       // invalid location
-      bucket = &get_bucket(key);
+      bucket = &get_bucket(i.key);
     }
 
-    bucket->append(hash_table_item<V>(key, std::move(value)));
+    bucket->append(std::move(i));
     ++size;
   }
 
-  void insert(const uint8_t *key, V &value) {
+  iterator lookup(const qs::string &key) { return lookup(key.get_buffer()); }
 
-    // First check if an item with this key already exists in the bucket
-    auto bucket = &get_bucket(key);
-    for (auto &n : *bucket) {
-      if (n.keycmp(key)) {
-        return;
-      }
-    }
-    double load_factor = (double)size / (double)capacity;
-    if (load_factor >= 0.75) {
-      resize();
-      // Relocate the bucket because after the resize it might point to an
-      // invalid location
-      bucket = &get_bucket(key);
-    }
-
-    bucket->append(hash_table_item<V>(key, value));
-    ++size;
-  }
-
-  iterator lookup(const uint8_t *key) {
-    uint64_t hash = djb2(key) % capacity;
+  iterator lookup(const char *key) {
+    uint64_t hash = djb2((const uint8_t *)key) % capacity;
     auto &bucket = buckets[hash];
     auto n = bucket.head;
     while (n != nullptr) {
@@ -215,7 +219,9 @@ public:
     return n != nullptr ? iterator(n, &buckets, hash) : end();
   }
 
-  void remove(const uint8_t *key) {
+  void remove(const qs::string &key) { remove(key.get_buffer()); }
+
+  void remove(const char *key) {
     auto &bucket = get_bucket(key);
     auto list_node = get_by_key(bucket, key);
     if (list_node == nullptr) {
@@ -271,7 +277,7 @@ public:
     iterator &operator=(iterator &other) = default;
 
     reference operator*() { return current->get(); }
-    pointer operator->() { return &*this; }
+    pointer operator->() { return &current->get(); }
 
     iterator &operator++() {
       current = current->next();

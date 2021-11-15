@@ -14,8 +14,7 @@ TEST_CASE("Deduplication") {
       qs::parse_file(f, '\n',
                      [&set](const qs::string &entry) { set.insert(entry); });
       THEN("Hash set should contains only 5 entries") {
-        auto entries = set.get_all();
-        REQUIRE(entries.get_size() == 5);
+        REQUIRE(set.get_size() == 5);
       }
       std::fclose(f);
     }

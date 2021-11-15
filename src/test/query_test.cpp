@@ -67,8 +67,7 @@ SCENARIO("main") {
                  [&set](const qs::string &entry) { set.insert(entry); });
   fclose(qf);
   auto entry_list = qs::linked_list<qs::entry<char>>();
-  auto entries = set.get_all();
-  for (auto &e : entries) {
+  for (auto &e : set) {
     entry_list.append(qs::entry(e, '\0'));
   }
   qs::bk_tree<qs::entry<char>> bk(entry_list, dist);

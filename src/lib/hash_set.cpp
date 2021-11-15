@@ -3,23 +3,17 @@
 namespace qs {
 
 bool hash_set::contains(const qs::string &key) {
-  return this->table.lookup(reinterpret_cast<const uint8_t *>(
-             key.get_buffer())) != this->table.end();
+  return this->table.lookup(key) != this->table.end();
 }
 
 void hash_set::insert(const qs::string &key) {
-  this->table.insert(reinterpret_cast<const uint8_t *>(key.get_buffer()), '\0');
+  this->table.insert(qs::string(key), '\0');
+}
+void hash_set::insert(qs::string &&key) {
+  this->table.insert(std::move(key), '\0');
 }
 
-void hash_set::remove(const qs::string &key) {
-  this->table.remove(reinterpret_cast<const uint8_t *>(key.get_buffer()));
-}
+void hash_set::remove(const qs::string &key) { this->table.remove(key); }
+std::size_t hash_set::get_size() { return table.get_size(); }
 
-vector<qs::string> hash_set::get_all() {
-  auto values = vector<qs::string>(this->table.get_size());
-  for (auto &n : this->table) {
-    values.push(qs::string((const char *)n.get_key()));
-  }
-  return values;
-}
 } // namespace qs

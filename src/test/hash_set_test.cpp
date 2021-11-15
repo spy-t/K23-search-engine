@@ -38,10 +38,9 @@ TEST_CASE("Hash set retrieve all keys") {
         arr.push(skey);
       }
       THEN("We should be able to retrieve all the keys") {
-        auto keys = set.get_all();
         for (auto &v : arr) {
           bool found = false;
-          for (auto &k : keys) {
+          for (auto &k : set) {
             if (v == k) {
               found = true;
             }
