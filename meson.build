@@ -44,7 +44,8 @@ tests = [
 	'hash_table_test',
 	'skip_list_test',
 	'ops_test',
-	'deduplication_test'
+	'deduplication_test',
+	'query_test'
 ]
 
 global_test_deps = ['src/test/catch_amalgamated.cpp']
