@@ -2,7 +2,6 @@ build/
 .vscode/
 .idea/
 .cache/
-med_text_test.txt
 
 compile_commands.json
 
