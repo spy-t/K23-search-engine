@@ -51,18 +51,22 @@ template <typename V> class bk_tree_node {
 
   void match(const distance_func<V> dist_func, int threshold, V query,
              int parent_to_query, qs::linked_list<V> &result) {
-    qs::functions::for_each(
-        this->children.begin(), this->children.end(),
-        [dist_func, &threshold, &query, &parent_to_query, &result](node_p n) {
-          int dist = dist_func(n->data, query);
-          if (dist <= threshold) {
-            result.append(n->data);
-          }
-          if (parent_to_query - threshold <= n->distance_from_parent &&
-              n->distance_from_parent <= parent_to_query + threshold) {
-            n->match(dist_func, threshold, query, dist, result);
-          }
-        });
+    int lower_bound = parent_to_query - threshold;
+    int upper_bound = parent_to_query + threshold;
+    for (auto i = this->children.begin(); i != this->children.end(); i++) {
+      int dist = dist_func((*i)->data, query);
+      if (dist <= threshold) {
+        result.append((*i)->data);
+      }
+
+      if ((*i)->distance_from_parent < lower_bound) {
+        continue;
+      } else if ((*i)->distance_from_parent <= upper_bound) {
+        (*i)->match(dist_func, threshold, query, dist, result);
+      } else {
+        break;
+      }
+    }
   }
 
 public:

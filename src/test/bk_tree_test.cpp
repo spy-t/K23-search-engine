@@ -26,7 +26,7 @@ void check_children(qs::bk_tree_node<qs::string> *node, const char *strings[],
 }
 
 SCENARIO("BK-Tree correct construction and matching") {
-  GIVEN("The strings: hell, help, fall, felt, fell, small, melt and using"
+  GIVEN("The strings: hell, help, fall, felt, fell, smal, melt and using"
         " hamming distance") {
     qs::vector<qs::string> word_vec(7);
     word_vec.push(qs::string("hell"));
@@ -82,7 +82,7 @@ SCENARIO("BK-Tree correct construction and matching") {
     }
   }
 
-  GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop and "
+  GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop, helped and "
         "using edit distance") {
     auto tree = qs::bk_tree<qs::string>(qs::edit_distance);
     tree.insert(qs::string("help"));
