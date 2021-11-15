@@ -2,7 +2,7 @@
 #define QS_ENTRY_HPP
 #include <qs/string.h>
 #include <memory>
-
+namespace qs{
 template <typename T> struct entry{
   qs::string word;
   T payload;
@@ -12,4 +12,6 @@ template <typename T> struct entry{
   entry(qs::string&& w,T&& payload): word(std::move(w)), payload(std::move(payload)){}
 
 };
-#endif // K23_SEARCH_ENTRY_HPP
+} // namespace qs
+
+#endif // QS_ENTRY_HPP
