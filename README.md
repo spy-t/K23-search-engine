@@ -7,6 +7,9 @@
 - meson
 - ninja
 - gcovr (only if you need test coverage)
+- For profiling:
+	-	[flamegraph-rs](https://github.com/flamegraph-rs/flamegraph)
+	-	linux-perf
 
 ## Meson how-to
 
@@ -40,6 +43,14 @@ meson test -C build # Run all tests
 meson test vector_test -C build # Run a specific test
 meson test -C build --print-errorlogs # Run all tests with stdout/err output
 meson test -C build --gdb # Debug the tests
+```
+
+### Profiling
+
+To profile an executable and generate a flamegraph run
+```bash
+flamegraph -o flamegraph.svg ./path/to/executable
+$BROWSER flamegraph.svg
 ```
 
 ### Extra
