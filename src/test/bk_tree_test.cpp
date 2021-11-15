@@ -82,7 +82,8 @@ SCENARIO("BK-Tree correct construction and matching") {
     }
   }
 
-  GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop, helped and "
+  GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop, "
+        "helped and "
         "using edit distance") {
     auto tree = qs::bk_tree<qs::string>(qs::edit_distance);
     tree.insert(qs::string("help"));

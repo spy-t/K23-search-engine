@@ -28,7 +28,8 @@ int hamming_distance(qs::string s1, qs::string s2) {
 static QS_FORCE_INLINE int get(int *arr, int row, int col, int width) {
   return arr[row * width + col];
 }
-static QS_FORCE_INLINE void set(int *arr, int row, int col, int width, int val) {
+static QS_FORCE_INLINE void set(int *arr, int row, int col, int width,
+                                int val) {
   arr[row * width + col] = val;
 }
 
@@ -39,7 +40,7 @@ int edit_distance(qs::string s1, qs::string s2) {
   int height = l1 + 1;
   int width = l2 + 1;
 
-  int *d = new int [width * height];
+  int *d = new int[width * height];
 
   for (int i = 0; i <= l1; i++) {
     set(d, i, 0, width, i);
