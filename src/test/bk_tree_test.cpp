@@ -2,6 +2,7 @@
 
 #include <qs/bk_tree.hpp>
 #include <qs/distances.hpp>
+#include <qs/functions.hpp>
 #include <qs/list.hpp>
 #include <qs/string.h>
 #include <qs/vector.hpp>
@@ -71,9 +72,11 @@ SCENARIO("BK-Tree correct construction and matching") {
       THEN("'hell' and 'help' are found") {
         auto words = tree.match(2, qs::string("henn"));
         REQUIRE(words.get_size() == 2);
-        auto matched_words = words.get_data();
-        REQUIRE(!std::strcmp(*(matched_words[0]), "hell"));
-        REQUIRE(!std::strcmp(*(matched_words[1]), "help"));
+        auto hell =
+            qs::functions::find(words.begin(), words.end(), qs::string("hell"));
+        auto help =
+            qs::functions::find(words.begin(), words.end(), qs::string("help"));
+        REQUIRE((hell != words.end() && help != words.end()));
       }
     }
   }
@@ -134,8 +137,9 @@ SCENARIO("BK-Tree correct construction and matching") {
       THEN("'helper' is found") {
         auto words = tree.match(0, qs::string("helper"));
         REQUIRE(words.get_size() == 1);
-        auto matched_words = words.get_data();
-        REQUIRE(!std::strcmp(*(matched_words[0]), "helper"));
+        auto helper = qs::functions::find(words.begin(), words.end(),
+                                          qs::string("helper"));
+        REQUIRE(helper != words.end());
       }
     }
 
@@ -143,9 +147,11 @@ SCENARIO("BK-Tree correct construction and matching") {
       THEN("'loop' and 'troop' are found") {
         auto words = tree.match(3, qs::string("poor"));
         REQUIRE(words.get_size() == 2);
-        auto matched_words = words.get_data();
-        REQUIRE(!std::strcmp(*(matched_words[0]), "loop"));
-        REQUIRE(!std::strcmp(*(matched_words[1]), "troop"));
+        auto loop =
+            qs::functions::find(words.begin(), words.end(), qs::string("loop"));
+        auto troop = qs::functions::find(words.begin(), words.end(),
+                                         qs::string("troop"));
+        REQUIRE((loop != words.end() && troop != words.end()));
       }
     }
 
@@ -153,8 +159,9 @@ SCENARIO("BK-Tree correct construction and matching") {
       THEN("'helped' is found") {
         auto words = tree.match(0, qs::string("helped"));
         REQUIRE(words.get_size() == 1);
-        auto matched_words = words.get_data();
-        REQUIRE(!std::strcmp(*(matched_words[0]), "helped"));
+        auto helped = qs::functions::find(words.begin(), words.end(),
+                                          qs::string("helped"));
+        REQUIRE(helped != words.end());
       }
     }
   }

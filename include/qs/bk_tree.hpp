@@ -50,13 +50,13 @@ template <typename V> class bk_tree_node {
   }
 
   void match(const distance_func<V> dist_func, int threshold, V query,
-             int parent_to_query, qs::vector<V> &result) {
+             int parent_to_query, qs::linked_list<V> &result) {
     qs::functions::for_each(
         this->children.begin(), this->children.end(),
         [dist_func, &threshold, &query, &parent_to_query, &result](node_p n) {
           int dist = dist_func(n->data, query);
           if (dist <= threshold) {
-            result.push(n->data);
+            result.append(n->data);
           }
           if (parent_to_query - threshold <= n->distance_from_parent &&
               n->distance_from_parent <= parent_to_query + threshold) {
@@ -114,14 +114,14 @@ public:
     }
   }
 
-  qs::vector<T> match(int threshold, T query) const {
+  qs::linked_list<T> match(int threshold, T query) const {
     if (this->root == nullptr) {
-      return qs::vector<T>(0);
+      return qs::linked_list<T>();
     }
-    auto ret = qs::vector<T>();
+    auto ret = qs::linked_list<T>();
     int D = this->d(query, this->root->data);
     if (D <= threshold) {
-      ret.push(this->root->data);
+      ret.append(this->root->data);
     }
     this->root->match(this->d, threshold, query, D, ret);
     return ret;
