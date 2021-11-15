@@ -92,6 +92,17 @@ public:
   friend class bk_tree_node<T>;
 
   explicit bk_tree(const distance_func<T> d) : d(d), root(nullptr) {}
+  template <class Iter>
+  explicit bk_tree(Iter begin, Iter end, const distance_func<T> d)
+      : d(d), root(nullptr) {
+    while (begin != end) {
+      this->insert(*begin);
+      begin++;
+    }
+  }
+  template <class Iterable>
+  explicit bk_tree(Iterable &it, const distance_func<T> d)
+      : bk_tree(it.begin(), it.end(), d) {}
 
   ~bk_tree() { delete this->root; }
 

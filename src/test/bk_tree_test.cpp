@@ -26,14 +26,15 @@ void check_children(qs::bk_tree_node<qs::string> *node, const char *strings[],
 SCENARIO("BK-Tree correct construction and matching") {
   GIVEN("The strings: hell, help, fall, felt, fell, small, melt and using"
         " hamming distance") {
-    auto tree = qs::bk_tree<qs::string>(qs::hamming_distance);
-    tree.insert(qs::string("hell"));
-    tree.insert(qs::string("help"));
-    tree.insert(qs::string("fall"));
-    tree.insert(qs::string("felt"));
-    tree.insert(qs::string("fell"));
-    tree.insert(qs::string("smal"));
-    tree.insert(qs::string("melt"));
+    qs::vector<qs::string> word_vec(7);
+    word_vec.push(qs::string("hell"));
+    word_vec.push(qs::string("help"));
+    word_vec.push(qs::string("fall"));
+    word_vec.push(qs::string("felt"));
+    word_vec.push(qs::string("fell"));
+    word_vec.push(qs::string("smal"));
+    word_vec.push(qs::string("melt"));
+    auto tree = qs::bk_tree<qs::string>(word_vec, qs::hamming_distance);
 
     THEN("'hell' is the root") {
       auto r = tree.get_root();
