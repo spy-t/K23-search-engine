@@ -84,19 +84,19 @@ ninja -C build scan-build
 | threshold   | order    | time   |
 |-------------|----------|--------|
 | 0           | random   | 2s     |
-| 0           | min      | 2s     |
-| 0           | max      | 2s     |
+| 0           | min      | 661ms  |
+| 0           | max      | 730ms  |
 | ----------- | -------- | ------ |
 | 1           | random   | 8s     |
-| 1           | min      | 7s     |
-| 1           | max      | 7s     |
+| 1           | min      | 3.45s  |
+| 1           | max      | 3.25s  |
 | ----------- | -------- | ------ |
 | 2           | random   | 17s    |
-| 2           | min      | 14s    |
-| 2           | max      | 13s    |
+| 2           | min      | 8.11s  |
+| 2           | max      | 7.73s  |
 | ----------- | -------- | ------ |
 | 3           | random   | 27s    |
-| 3           | min      | 22s    |
-| 3           | max      | 21s    |
+| 3           | min      | 12.31s |
+| 3           | max      | 11.69s |
 
 So the winner by a very small margin is max ordering (may matter for very large thresholds)
