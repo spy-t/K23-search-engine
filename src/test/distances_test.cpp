@@ -9,8 +9,7 @@ TEST_CASE("Hamming distance") {
   };
 
   SECTION("Two strings: 'when' and 'whenever'") {
-    REQUIRE(qs::hamming_distance(qs::string("when"), qs::string("whenever")) ==
-            4);
+    REQUIRE_THROWS(qs::hamming_distance(qs::string("when"), qs::string("whenever")));
   }
 }
 

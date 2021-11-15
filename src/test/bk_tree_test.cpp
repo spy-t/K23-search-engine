@@ -32,15 +32,15 @@ SCENARIO("BK-Tree correct construction and matching") {
     tree.insert(qs::string("fall"));
     tree.insert(qs::string("felt"));
     tree.insert(qs::string("fell"));
-    tree.insert(qs::string("small"));
+    tree.insert(qs::string("smal"));
     tree.insert(qs::string("melt"));
 
     THEN("'hell' is the root") {
       auto r = tree.get_root();
       REQUIRE(!std::strcmp(*(r->get()), "hell"));
 
-      THEN("'hell' has 3 children: 'help', 'fall' and 'small'") {
-        const char *children_strings[3] = {"help", "fall", "small"};
+      THEN("'hell' has 3 children: 'help', 'fall' and 'smal'") {
+        const char *children_strings[3] = {"help", "fall", "smal"};
 
         check_children(r, children_strings, 3);
 
@@ -56,9 +56,9 @@ SCENARIO("BK-Tree correct construction and matching") {
             const char *fall_children_strings[2] = {"felt", "melt"};
             check_children(*fall_node_iter, fall_children_strings, 2);
 
-            THEN("'small' has no children") {
-              auto small_node_iter = ++fall_node_iter;
-              auto &small_children = (*small_node_iter)->get_children();
+            THEN("'smal' has no children") {
+              auto smal_node_iter = ++fall_node_iter;
+              auto &small_children = (*smal_node_iter)->get_children();
               REQUIRE(const_cast<sl &>(small_children).get_size() == 0);
             }
           }
