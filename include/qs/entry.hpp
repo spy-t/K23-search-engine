@@ -15,15 +15,14 @@ template <typename T> struct entry {
   entry(qs::string &&w, T &&payload)
       : word(std::move(w)), payload(std::move(payload)) {}
 
-  static int edit_diastance(entry<T> &a, entry<T> &b) {
-    return qs::edit_distance(a->word, b.word);
+  static int edit_distance(entry<T> &a, entry<T> &b) {
+    return qs::edit_distance(a.word, b.word);
   }
   static int hamming_distance(entry<T> &a, entry<T> &b) {
-    return qs::hamming_distance(a->word, b.word);
+    return qs::hamming_distance(a.word, b.word);
   }
 };
 
-}
 } // namespace qs
 
 #endif // QS_ENTRY_HPP
