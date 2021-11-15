@@ -85,7 +85,7 @@ SCENARIO("String indexing works") {
     WHEN("It is dereferenced") {
       THEN("'String is empty' exception is thrown") {
         REQUIRE_THROWS_MATCHES(
-            s[0], std::runtime_error,
+            s.at(0), std::runtime_error,
             Catch::Matchers::Message("Invalid index. String is empty"));
       }
     }
@@ -101,7 +101,7 @@ SCENARIO("String indexing works") {
 
     WHEN("It is dereferenced using an invalid index with checked dereference") {
 
-      THEN("An exception is thrown") { REQUIRE_THROWS(s.operator[](9)); }
+      THEN("An exception is thrown") { REQUIRE_THROWS(s.at(9)); }
     }
 
     WHEN("It is dereferenced using a valid index with unchecked dereference") {
