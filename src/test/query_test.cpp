@@ -68,15 +68,16 @@ SCENARIO("main") {
   fclose(qf);
   auto entry_list = qs::linked_list<qs::entry<char>>();
   auto entries = set.get_all();
-  for (auto & e: entries) {
-      entry_list.append(qs::entry(e,'\0'));
+  for (auto &e : entries) {
+    entry_list.append(qs::entry(e, '\0'));
   }
-  qs::bk_tree<qs::entry<char>> bk(entry_list,dist);
+  qs::bk_tree<qs::entry<char>> bk(entry_list, dist);
 
   FILE *tf = std::fopen(word_file.c_str(), "r");
   REQUIRE(tf != nullptr);
-  qs::parse_file(tf, '\n',
-                 [&](const qs::string &entry) { bk.match(threshold, qs::entry(entry,'\0')); });
+  qs::parse_file(tf, '\n', [&](const qs::string &entry) {
+    bk.match(threshold, qs::entry(entry, '\0'));
+  });
 
   std::fclose(tf);
 }
