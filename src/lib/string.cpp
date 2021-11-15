@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <qs/core.h>
 #include <qs/error.h>
 #include <qs/functions.hpp>
 #include <qs/string.h>
@@ -134,8 +135,6 @@ string string::pure_sanitize(const string &remove_set) {
   return s.sanitize(remove_set);
 }
 
-char string::operator[](std::size_t index) { return this->str[index]; }
-
 char string::at(std::size_t index) {
   if (this->length == 0) {
     throw std::runtime_error("Invalid index. String is empty");
@@ -148,66 +147,6 @@ char string::at(std::size_t index) {
 }
 
 char *string::operator*() { return this->str; }
-
-bool operator==(const string &first, const string &second) {
-  return first.length == second.length &&
-         std::memcmp(first.str, second.str, first.length) == 0;
-}
-
-bool operator==(const string &first, const char *second) {
-  return first.length == std::strlen(second) &&
-         std::memcmp(first.str, second, first.length) == 0;
-}
-
-bool operator!=(const string &first, const string &second) {
-  return !(first == second);
-}
-
-bool operator!=(const string &first, const char *second) {
-  return !(first == second);
-}
-
-bool operator<(const string &first, const string &second) {
-  return std::memcmp(
-             first.get_buffer(), second.get_buffer(),
-             qs::functions::min(first.get_length(), second.get_length())) < 0;
-}
-bool operator<(const string &first, const char *second) {
-  return std::memcmp(
-             first.get_buffer(), second,
-             qs::functions::min(first.get_length(), std::strlen(second))) < 0;
-}
-bool operator<=(const string &first, const string &second) {
-  return std::memcmp(
-             first.get_buffer(), second.get_buffer(),
-             qs::functions::min(first.get_length(), second.get_length())) <= 0;
-}
-bool operator<=(const string &first, const char *second) {
-  return std::memcmp(
-             first.get_buffer(), second,
-             qs::functions::min(first.get_length(), std::strlen(second))) <= 0;
-}
-bool operator>(const string &first, const string &second) {
-  return std::memcmp(
-             first.get_buffer(), second.get_buffer(),
-             qs::functions::min(first.get_length(), second.get_length())) > 0;
-}
-bool operator>(const string &first, const char *second) {
-  return std::memcmp(
-             first.get_buffer(), second,
-             qs::functions::min(first.get_length(), std::strlen(second))) > 0;
-}
-bool operator>=(const string &first, const string &second) {
-
-  return std::memcmp(
-             first.get_buffer(), second.get_buffer(),
-             qs::functions::min(first.get_length(), second.get_length())) >= 0;
-}
-bool operator>=(const string &first, const char *second) {
-  return std::memcmp(
-             first.get_buffer(), second,
-             qs::functions::min(first.get_length(), std::strlen(second))) >= 0;
-}
 
 std::ostream &operator<<(std::ostream &out, const string &str) {
   out << str.str;

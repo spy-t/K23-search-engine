@@ -2,6 +2,7 @@
 #define QS_OPS_HPP
 
 #include <iterator>
+#include <qs/core.h>
 #include <type_traits>
 #include <utility>
 
@@ -46,13 +47,17 @@ template <class T> void swap(T &a, T &b) noexcept {
   b = std::move(tmp);
 }
 
-template <class T> T &max(T &a, T &b) { return a > b ? a : b; }
-template <class T> T &min(T &a, T &b) { return a < b ? a : b; }
-
-template <class T> const T &max(const T &a, const T &b) {
+template <class T> static QS_FORCE_INLINE T &max(T &a, T &b) {
   return a > b ? a : b;
 }
-template <class T> const T &min(const T &a, const T &b) {
+template <class T> static QS_FORCE_INLINE T &min(T &a, T &b) {
+  return a < b ? a : b;
+}
+
+template <class T> static QS_FORCE_INLINE const T &max(const T &a, const T &b) {
+  return a > b ? a : b;
+}
+template <class T> static QS_FORCE_INLINE const T &min(const T &a, const T &b) {
   return a < b ? a : b;
 }
 

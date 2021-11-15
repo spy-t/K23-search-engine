@@ -5,6 +5,9 @@
 #include <cstring>
 #include <iostream>
 
+#include <qs/core.h>
+#include <qs/functions.hpp>
+
 namespace qs {
 
 // A wrapper around NULL terminated ASCII strings
@@ -45,28 +48,85 @@ public:
   string pure_sanitize(const string &remove_set);
 
   // Unchecked index operation
-  char operator[](std::size_t index);
+  QS_FORCE_INLINE char operator[](std::size_t index) {
+    return this->str[index];
+  }
   // Checked index operation
   char at(std::size_t index);
 
   // Unchecked dereference operation
   char *operator*();
 
-  friend bool operator==(const string &first, const string &second);
-  friend bool operator==(const string &first, const char *second);
+  friend QS_FORCE_INLINE bool operator==(const string &first,
+                                         const string &second) {
+    return first.length == second.length &&
+           std::memcmp(first.str, second.str, first.length) == 0;
+  }
+  friend QS_FORCE_INLINE bool operator==(const string &first,
+                                         const char *second) {
+    return first.length == std::strlen(second) &&
+           std::memcmp(first.str, second, first.length) == 0;
+  }
 
-  friend bool operator!=(const string &first, const string &second);
-  friend bool operator!=(const string &first, const char *second);
+  friend QS_FORCE_INLINE bool operator!=(const string &first,
+                                         const string &second) {
+    return !(first == second);
+  }
+  friend QS_FORCE_INLINE bool operator!=(const string &first,
+                                         const char *second) {
+    return !(first == second);
+  }
 
-  friend bool operator<(const string &first, const string &second);
-  friend bool operator<(const string &first, const char *second);
-  friend bool operator<=(const string &first, const string &second);
-  friend bool operator<=(const string &first, const char *second);
+  friend QS_FORCE_INLINE bool operator<(const string &first,
+                                        const string &second) {
+    return std::memcmp(
+               first.get_buffer(), second.get_buffer(),
+               qs::functions::min(first.get_length(), second.get_length())) < 0;
+  }
+  friend QS_FORCE_INLINE bool operator<(const string &first,
+                                        const char *second) {
+    return std::memcmp(
+               first.get_buffer(), second,
+               qs::functions::min(first.get_length(), std::strlen(second))) < 0;
+  }
+  friend QS_FORCE_INLINE bool operator<=(const string &first,
+                                         const string &second) {
+    return std::memcmp(first.get_buffer(), second.get_buffer(),
+                       qs::functions::min(first.get_length(),
+                                          second.get_length())) <= 0;
+  }
 
-  friend bool operator>(const string &first, const string &second);
-  friend bool operator>(const string &first, const char *second);
-  friend bool operator>=(const string &first, const string &second);
-  friend bool operator>=(const string &first, const char *second);
+  friend QS_FORCE_INLINE bool operator<=(const string &first,
+                                         const char *second) {
+    return std::memcmp(first.get_buffer(), second,
+                       qs::functions::min(first.get_length(),
+                                          std::strlen(second))) <= 0;
+  }
+
+  friend QS_FORCE_INLINE bool operator>(const string &first,
+                                        const string &second) {
+    return std::memcmp(
+               first.get_buffer(), second.get_buffer(),
+               qs::functions::min(first.get_length(), second.get_length())) > 0;
+  }
+  friend QS_FORCE_INLINE bool operator>(const string &first,
+                                        const char *second) {
+    return std::memcmp(
+               first.get_buffer(), second,
+               qs::functions::min(first.get_length(), std::strlen(second))) > 0;
+  }
+  friend QS_FORCE_INLINE bool operator>=(const string &first,
+                                         const string &second) {
+    return std::memcmp(first.get_buffer(), second.get_buffer(),
+                       qs::functions::min(first.get_length(),
+                                          second.get_length())) >= 0;
+  }
+  friend QS_FORCE_INLINE bool operator>=(const string &first,
+                                         const char *second) {
+    return std::memcmp(first.get_buffer(), second,
+                       qs::functions::min(first.get_length(),
+                                          std::strlen(second))) >= 0;
+  }
 
   friend std::ostream &operator<<(std::ostream &out, const string &str);
 
