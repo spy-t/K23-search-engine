@@ -13,7 +13,7 @@ readme αλλά ξαναγράφω κάποιο βασικά πράγματα ε
 
 - Initialize
 ```bash
-meson build
+meson build -Dbuildtype=release # Release mode για να έχουμε όλα τα δυνατά optimization
 ```
 
 - Build
