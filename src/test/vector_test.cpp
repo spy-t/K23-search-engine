@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 
 #include <qs/memory.hpp>
@@ -33,7 +32,7 @@ qs::string construct_string(std::size_t i) { return qs::string(i); }
 
 qs::vector<int> f(qs::vector<int> v) { return v; }
 
-TEST_CASE("vector push behaves correctly") {
+TEST_CASE("vector push behaves correctly", "[vector]") {
   std::size_t size = 5;
 
   SECTION("vector of primitives") {
@@ -89,7 +88,7 @@ TEST_CASE("vector push behaves correctly") {
   }
 }
 
-TEST_CASE("vector resizing behaves correctly") {
+TEST_CASE("vector resizing behaves correctly", "[vector]") {
   std::size_t initial_size = 5;
   std::size_t size_that_triggers_resize = 5;
 
@@ -143,7 +142,7 @@ TEST_CASE("vector resizing behaves correctly") {
   }
 }
 
-TEST_CASE("vector runtime exceptions behave correctly") {
+TEST_CASE("vector runtime exceptions behave correctly", "[vector]") {
   auto v = construct_vector<int>(5, construct_int);
 
   SECTION("out of bounds set (rvalue)") { REQUIRE_THROWS(v.set(100, 10)); }
@@ -154,7 +153,7 @@ TEST_CASE("vector runtime exceptions behave correctly") {
   SECTION("out of bounds dereference") { REQUIRE_THROWS(v.at(6)); }
 }
 
-TEST_CASE("vector copying and moving behaves correctly") {
+TEST_CASE("vector copying and moving behaves correctly", "[vector]") {
   qs::vector<qs::string> v(5);
   for (int i = 0; i < 5; ++i) {
     v.push(qs::string(i));
@@ -194,7 +193,7 @@ TEST_CASE("vector copying and moving behaves correctly") {
   }
 }
 
-TEST_CASE("vector iterator behaves correctly") {
+TEST_CASE("vector iterator behaves correctly", "[vector]") {
   auto v1 = construct_vector<int>(5, construct_int);
   auto v2 = construct_vector<obj>(5, construct_obj);
   auto v3 = construct_vector<qs::unique_pointer<obj>>(5, construct_pointer_obj);

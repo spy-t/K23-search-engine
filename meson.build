@@ -30,34 +30,42 @@ libqs_static = static_library('qs', libqs_src, include_directories : include)
 # 	include_directories : include,
 # 	override_options : ['warning_level=3'])
 
-tests = [
-	'string_test',
-	'sstream_test',
-	'bk_tree_test',
-	'vector_test',
-	'distances_test',
-	'unique_pointer_test',
-	'hash_set_test',
-	'list_test',
-	'optional_test',
-	'parser_test',
-	'hash_table_test',
-	'skip_list_test',
-	'ops_test',
-	'deduplication_test',
-	'query_test'
+unit_test_sources = [
+	'src/test/unit_main.cpp',
+	'src/test/string_test.cpp',
+	'src/test/sstream_test.cpp',
+	'src/test/bk_tree_test.cpp',
+	'src/test/vector_test.cpp',
+	'src/test/distances_test.cpp',
+	'src/test/unique_pointer_test.cpp',
+	'src/test/hash_set_test.cpp',
+	'src/test/list_test.cpp',
+	'src/test/optional_test.cpp',
+	'src/test/parser_test.cpp',
+	'src/test/hash_table_test.cpp',
+	'src/test/skip_list_test.cpp',
+	'src/test/ops_test.cpp',
+	'src/test/deduplication_test.cpp',
 ]
 
-global_test_deps = ['src/test/catch_amalgamated.cpp']
+unit_tests = executable('unit_tests',
+	sources : unit_test_sources,
+	link_with : libqs_static,
+	include_directories : include,
+	cpp_args: '-DDEBUG'
+)
 
-foreach test_name : tests
-	t = executable(test_name,
-		sources : ['src/test/@0@.cpp'.format(test_name)],
-		link_with : libqs_static,
-		include_directories : include,
-		cpp_args: '-DDEBUG'
-	)
-	
-	test(test_name, t)
-endforeach
+test('unit_tests', unit_tests)
 
+end_to_end_test_sources = [
+	'src/test/query_test.cpp'
+]
+
+end_to_end_tests = executable('end_to_end_tests',
+	sources : end_to_end_test_sources,
+	link_with : libqs_static,
+	include_directories : include,
+	cpp_args: '-DDEBUG'
+)
+
+test('end_to_end_tests', end_to_end_tests)

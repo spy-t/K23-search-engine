@@ -1,10 +1,9 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 #include <cstdio>
 #include <qs/parser.hpp>
 #include <qs/string.h>
 
-TEST_CASE("Parse file line by line") {
+TEST_CASE("Parse file line by line", "[parser]") {
   SECTION("SMALL TEST") {
     const char *filepath = "../src/test/resources/small_test.txt";
     FILE *f = std::fopen(filepath, "r");
@@ -26,7 +25,7 @@ TEST_CASE("Parse file line by line") {
   }
 }
 
-TEST_CASE("Parse string token by token") {
+TEST_CASE("Parse string token by token", "[parser]") {
   SECTION("Small string") {
     const char *t = "First/";
     size_t length = strlen(t);

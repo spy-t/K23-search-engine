@@ -1,5 +1,5 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
+
 #include <qs/hash_table.hpp>
 #include <qs/memory.hpp>
 #include <qs/string.h>
@@ -14,7 +14,7 @@ int remove_value(int *a, std::size_t size, int what) {
   return -1;
 }
 
-TEST_CASE("hash table behaves as expected") {
+TEST_CASE("hash table behaves as expected", "[hash_table]") {
   SECTION("hash table of primitives") {
     qs::hash_table<int> ht;
     constexpr int max = 100;

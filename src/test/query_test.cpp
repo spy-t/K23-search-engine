@@ -42,10 +42,6 @@ int main(int argc, char *argv[]) {
     return ret;
   }
 
-  if (threshold == -1) {
-    return EXIT_SUCCESS;
-  }
-
   if (distance_function == "edit") {
     dist = qs::entry<char>::edit_distance;
   } else if (distance_function == "hamming") {

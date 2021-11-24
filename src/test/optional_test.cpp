@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 #include <qs/memory.hpp>
 #include <qs/optional.hpp>
@@ -22,7 +21,7 @@ struct non_trivial {
   }
 };
 
-TEST_CASE("optional behaves correctly") {
+TEST_CASE("optional behaves correctly", "[optional]") {
   SECTION("for primitives") {
     qs::optional<int> opt(5);
     qs::optional<int> nullopt;

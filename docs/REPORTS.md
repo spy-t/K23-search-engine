@@ -23,7 +23,8 @@ cd build && ninja
 
 - Test
 ```bash
-cd build && meson test <test_name> # η meson test αν θέλουμε να τρέξουν όλα τα test
+cd build && meson test <test_name> # η meson test αν θέλουμε να τρέξουν όλα τα test 
+                                   # (note το end_to_end_tests θα κανει fail γιατι χρειάζεται arguments)
 ```
 
 - Leak checks με το AddressSanitizer
@@ -103,9 +104,7 @@ C++ στυλ με RAII, templates, iterators και exceptions για error hand
 #### End to end test
 
 Το `query_test` είναι ένα τεστ το οποίο εξετάζει ολιστικά τα ζητούμενα της
-εργασίας. Επειδή χρειάζεται command line options για να λειτουργήσει όταν τρέχει
-όλη η σουίτα με το `meson test` το `query_test` απλά περνάει αυτόματα για να μην
-επηρεάσει τα υπόλοιπα test.
+εργασίας
 
 Το `query_test` χρειάζεται μια προεργασία για να τρέξει. Αρχικά πρέπει να
 υπάρχει κάποιο input το οποίο θα χρησιμοποιήσει το test. Για αρχή κάνοντας `cd src/test/resources`
@@ -120,11 +119,11 @@ hamming distance.
 1.3 MB. Αν παίρνει υπερβολικά πολύ ώρα για να είναι χρήσιμο τότε μπορείτε να το
 τρέξετε με κάποιο συνδυασμό απο τα files που έχουν παραχθεί για το hamming
 distance test)
-`./query_test --queries path/to/query_list --words path/to/word_list --threshold 3 --distance edit`
+`./end_to_end_tests --queries path/to/query_list --words path/to/word_list --threshold 3 --distance edit`
 
 **ΠΡΟΣΟΧΗ**: αν δεν μπει το `threshold` flag τότε το τεστ θα κάνει pass
 κατευθείαν.
 
 Παράδειγμα με hamming distance
 
-`./query_test --queries path/to/3-query_list --words path/to/3-word_list --threshold 3 --distance hamming`
+`./end_to_end_tests --queries path/to/3-query_list --words path/to/3-word_list --threshold 3 --distance hamming`

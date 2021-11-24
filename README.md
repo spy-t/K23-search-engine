@@ -38,11 +38,14 @@ meson compile -C build
 
 ### Testing
 
+Create a new test in `src/test` and tag each test case with the prefix of the
+filename
+
 ```bash
-meson test -C build # Run all tests
-meson test vector_test -C build # Run a specific test
-meson test -C build --print-errorlogs # Run all tests with stdout/err output
-meson test -C build --gdb # Debug the tests
+ninja unit_tests -C build    # Build the tests
+./build/unit_tests           # Run all the tests
+./build/unit_tests -t        # List all the available tags
+./build/unit_tests [bk_tree] # Run a specific tag
 ```
 
 ### Profiling

@@ -1,10 +1,9 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 
 #include <qs/functions/ops.hpp>
 #include <qs/vector.hpp>
 
-TEST_CASE("qs::functions::find") {
+TEST_CASE("qs::functions::find", "[ops]") {
   SECTION("Nothing found") {
     auto v = qs::vector<const char *>();
     v.push("word1");

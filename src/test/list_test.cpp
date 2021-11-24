@@ -1,8 +1,8 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
+
 #include <qs/list.hpp>
 
-TEST_CASE("Linked list behaves as expected") {
+TEST_CASE("Linked list behaves as expected", "[list]") {
   GIVEN("A linked list") {
     const int maxi = 10;
     qs::linked_list<int> l;
@@ -78,7 +78,7 @@ TEST_CASE("Linked list behaves as expected") {
   }
 }
 
-TEST_CASE("Linked list iterator behaves as expected") {
+TEST_CASE("Linked list iterator behaves as expected", "[list]") {
   GIVEN("A linked list") {
     const int maxi = 10;
     qs::linked_list<int> l;

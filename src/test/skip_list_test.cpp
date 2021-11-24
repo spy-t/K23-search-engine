@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 
 #include <qs/functions.hpp>
@@ -13,7 +12,7 @@ qs::string data[n] = {
     qs::string("."),
 };
 
-SCENARIO("qs::skip_list behaves as expected") {
+SCENARIO("qs::skip_list behaves as expected", "[skip_list]") {
 
   GIVEN("a qs::skip_list") {
     qs::skip_list<qs::string, 10> sl(

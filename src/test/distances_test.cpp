@@ -1,10 +1,8 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
-
 #include <qs/distances.hpp>
 #include <qs/string.h>
 
-TEST_CASE("Hamming distance") {
+TEST_CASE("Hamming distance", "[distances]") {
   SECTION("Two strings: 'hell' and 'felt'") {
     REQUIRE(qs::hamming_distance(qs::string("hell"), qs::string("felt")) == 2);
   };
@@ -15,7 +13,7 @@ TEST_CASE("Hamming distance") {
   }
 }
 
-TEST_CASE("Edit distance") {
+TEST_CASE("Edit distance", "[distances]") {
   SECTION("'hell' and 'felt'") {
     REQUIRE(qs::edit_distance(qs::string("hell"), qs::string("felt")) == 2);
   };

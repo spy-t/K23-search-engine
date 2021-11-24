@@ -1,4 +1,3 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 
 #include <qs/bk_tree.hpp>
@@ -25,7 +24,7 @@ void check_children(qs::bk_tree_node<qs::string> *node, const char *strings[],
       });
 }
 
-SCENARIO("BK-Tree correct construction and matching") {
+SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
   GIVEN("The strings: hell, help, fall, felt, fell, smal, melt and using"
         " hamming distance") {
     qs::vector<qs::string> word_vec(7);

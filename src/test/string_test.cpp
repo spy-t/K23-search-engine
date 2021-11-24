@@ -1,10 +1,9 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 
 #include <qs/string.h>
 #include <utility>
 
-SCENARIO("String concatenation works") {
+SCENARIO("String concatenation works", "[string]") {
   GIVEN("Two strings") {
     qs::string s1((char *)"String 1");
     qs::string s2((char *)"String 2");
@@ -44,7 +43,7 @@ SCENARIO("String concatenation works") {
   }
 }
 
-SCENARIO("String copy & move semantics work") {
+SCENARIO("String copy & move semantics work", "[string]") {
   GIVEN("A string") {
     qs::string s1((char *)"String 1");
     auto size = s1.get_length();
@@ -78,7 +77,7 @@ SCENARIO("String copy & move semantics work") {
   }
 }
 
-SCENARIO("String indexing works") {
+SCENARIO("String indexing works", "[string]") {
   GIVEN("An empty string") {
     qs::string s("");
 
@@ -112,7 +111,7 @@ SCENARIO("String indexing works") {
   }
 }
 
-SCENARIO("String comparisons work") {
+SCENARIO("String comparisons work", "[string]") {
   GIVEN("A string: 'String 1'") {
     qs::string s1("String 1");
 
@@ -139,7 +138,7 @@ SCENARIO("String comparisons work") {
     }
   }
 }
-SCENARIO("String sanitize works") {
+SCENARIO("String sanitize works", "[string]") {
   GIVEN("A simple string") {
     qs::string s("SUPER.D");
     WHEN("It is sanitized using {`.`} as remove set") {

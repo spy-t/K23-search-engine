@@ -1,10 +1,9 @@
-#define CATCH_CONFIG_MAIN
 #include "catch_amalgamated.hpp"
 
 #include <cstring>
 #include <qs/sstream.h>
 
-TEST_CASE("Components can be appended to a stringstream") {
+TEST_CASE("Components can be appended to a stringstream", "[sstream]") {
   qs::stringstream ss;
   SECTION("appending qs::string") {
     qs::string s("A string");
