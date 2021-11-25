@@ -11,7 +11,7 @@ SCENARIO("String concatenation works", "[string]") {
     REQUIRE(s2.get_length() == 8);
 
     WHEN("They are purely concatenated") {
-      auto s3 = s1.cat(s2);
+      auto s3 = s1 + s2;
 
       THEN("The resulting string is the concatenation") {
         REQUIRE(s3 == qs::string("String 1String 2"));
@@ -19,7 +19,7 @@ SCENARIO("String concatenation works", "[string]") {
     }
 
     WHEN("They are impurely concatenated") {
-      s1 = s1 + s2;
+      s1.cat(s2);
 
       THEN("The resulting string is the concatenation") {
         REQUIRE(s1 == qs::string("String 1String 2"));
@@ -33,7 +33,7 @@ SCENARIO("String concatenation works", "[string]") {
 
     WHEN("It is impurely concatenated with the numbers from 0 to 4") {
       for (int i = 0; i < 5; ++i) {
-        s = s + qs::string(i);
+        s.cat(qs::string(i));
       }
 
       THEN("The resulting string is 01234 ") {

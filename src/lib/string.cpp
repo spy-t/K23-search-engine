@@ -89,17 +89,7 @@ string::~string() {
   }
 }
 
-string string::cat(const string &other) {
-  auto s = string::with_size(this->length + other.length);
-  std::memcpy(s.str, this->str, this->length);
-  std::memcpy(s.str + this->length, other.str, other.length);
-  s.length = this->length + other.length;
-  s.str[s.length] = '\0';
-
-  return s;
-}
-
-string &string::operator+(const string &other) {
+string &string::cat(const string &other) {
   auto new_length = this->length + other.length;
 
   // No resizing needed
@@ -117,6 +107,16 @@ string &string::operator+(const string &other) {
   this->length = new_length;
 
   return *this;
+}
+
+string string::operator+(const string &other) {
+  auto s = string::with_size(this->length + other.length);
+  std::memcpy(s.str, this->str, this->length);
+  std::memcpy(s.str + this->length, other.str, other.length);
+  s.length = this->length + other.length;
+  s.str[s.length] = '\0';
+
+  return s;
 }
 
 string &string::sanitize(const string &remove_set) {

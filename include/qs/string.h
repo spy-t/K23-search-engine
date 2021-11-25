@@ -37,11 +37,11 @@ public:
 
   ~string();
 
-  // Pure addition operation. The result is a new instance of qs::string
-  string cat(const string &other);
-
   // Impure addition operation. Mutates the string in place
-  string &operator+(const string &other);
+  string &cat(const string &other);
+
+  // Pure addition operation. The result is a new instance of qs::string
+  string operator+(const string &other);
 
   string &sanitize(const string &remove_set);
 
