@@ -132,6 +132,52 @@ public:
 
   std::size_t get_length() const;
   const char *get_buffer() const;
+
+  struct iterator {
+    const char *p;
+
+  public:
+    using iterator_category = std::bidirectional_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = const char;
+    using pointer = value_type *;
+    using reference = value_type &;
+
+    explicit iterator(const char *p) : p(p) {}
+    reference operator*() { return *this->p; }
+    pointer operator->() { return this->p; }
+
+    iterator operator++() {
+      p++;
+      return *this;
+    }
+    iterator operator++(int) {
+      auto tmp = *this;
+      p++;
+      return tmp;
+    }
+    iterator &operator--() {
+      p--;
+      return *this;
+    }
+    iterator operator--(int) {
+      auto tmp = *this;
+      p--;
+      return tmp;
+    }
+    friend bool operator==(const iterator &a, const iterator &b) {
+      return a.p == b.p;
+    }
+    friend bool operator!=(const iterator &a, const iterator &b) {
+      return a.p != b.p;
+    }
+  };
+
+  iterator begin() { return iterator(this->str); }
+  iterator end() { return iterator(&(this->str[this->length])); }
+
+  auto rbegin() { return std::make_reverse_iterator(this->end()); }
+  auto rend() { return std::make_reverse_iterator(this->begin()); }
 };
 
 } // namespace qs
