@@ -8,7 +8,7 @@
 #include <qs/distances.hpp>
 #include <qs/entry.hpp>
 #include <qs/functions.hpp>
-#include <qs/hash_set.h>
+#include <qs/hash_set.hpp>
 #include <qs/list.hpp>
 #include <qs/parser.hpp>
 #include <qs/string.h>
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 SCENARIO("main") {
   FILE *qf = std::fopen(query_file.c_str(), "r");
   REQUIRE(qf != nullptr);
-  qs::hash_set set;
+  qs::hash_set<qs::string> set;
   qs::parse_file(qf, '\n',
                  [&set](const qs::string &entry) { set.insert(entry); });
   fclose(qf);

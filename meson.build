@@ -12,7 +12,6 @@ libqs_src = [
 	'src/lib/bloom.cpp',
 	'src/lib/distances.cpp',
 	'src/lib/hash.cpp',
-	'src/lib/hash_set.cpp',
 	'src/lib/sstream.cpp',
 	'src/lib/string.cpp'
 ]

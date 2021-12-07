@@ -1,7 +1,7 @@
 #include "catch_amalgamated.hpp"
 
 #include <qs/functions.hpp>
-#include <qs/hash_set.h>
+#include <qs/hash_set.hpp>
 #include <qs/parser.hpp>
 
 TEST_CASE("Deduplication", "[deduplication]") {
@@ -9,7 +9,7 @@ TEST_CASE("Deduplication", "[deduplication]") {
     const char *filepath = "../src/test/resources/5unique_test.txt";
     FILE *f = std::fopen(filepath, "r");
     WHEN("We insert entries into the hash set") {
-      qs::hash_set set;
+      qs::hash_set<qs::string> set;
       qs::parse_file(f, '\n',
                      [&set](const qs::string &entry) { set.insert(entry); });
       THEN("Hash set should contains only 5 entries") {

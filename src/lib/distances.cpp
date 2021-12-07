@@ -6,8 +6,8 @@ namespace qs {
 
 int hamming_distance(qs::string s1, qs::string s2) {
   int dist = 0;
-  std::size_t len1 = s1.get_length();
-  std::size_t len2 = s2.get_length();
+  std::size_t len1 = s1.length();
+  std::size_t len2 = s2.length();
   if (len1 != len2) {
     // TODO(spyros): This should be an assertion. Change this when the assertion
     // system is in place
@@ -35,8 +35,8 @@ static QS_FORCE_INLINE void set(int *arr, int row, int col, int width,
 }
 
 int edit_distance(qs::string s1, qs::string s2) {
-  int l1 = (int)s1.get_length();
-  int l2 = (int)s2.get_length();
+  int l1 = (int)s1.length();
+  int l2 = (int)s2.length();
 
   int height = l1 + 1;
   int width = l2 + 1;
@@ -85,14 +85,14 @@ static void init_edit_buffer(std::size_t *buffer, std::size_t len) {
 }
 
 int fast_distance(const qs::string &s1, const qs::string &s2) {
-  if (s1.get_length() == 0 || s2.get_length() == 0) {
-    return (int)functions::max(s1.get_length(), s2.get_length());
+  if (s1.length() == 0 || s2.length() == 0) {
+    return (int)functions::max(s1.length(), s2.length());
   }
 
-  const char *start1 = s1.get_buffer();
-  const char *start2 = s2.get_buffer();
-  std::size_t len1 = s1.get_length();
-  std::size_t len2 = s2.get_length();
+  const char *start1 = s1.data();
+  const char *start2 = s2.data();
+  std::size_t len1 = s1.length();
+  std::size_t len2 = s2.length();
   const char *end1 = start1 + len1;
   const char *end2 = start2 + len2;
 
@@ -162,8 +162,7 @@ int fast_distance(const qs::string &s1, const qs::string &s2) {
 
     std::size_t start_j =
         functions::max(1ll, (long long)(i - MAX_EDIT_DIST / 2));
-    end_j = functions::min(big_len + 1,
-                           (std::size_t)(i + MAX_EDIT_DIST / 2));
+    end_j = functions::min(big_len + 1, (std::size_t)(i + MAX_EDIT_DIST / 2));
 
     std::size_t col_min = MAX_EDIT_DIST;
 

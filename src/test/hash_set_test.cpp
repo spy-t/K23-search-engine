@@ -1,11 +1,11 @@
 #include "catch_amalgamated.hpp"
 
 #include <qs/functions.hpp>
-#include <qs/hash_set.h>
+#include <qs/hash_set.hpp>
 
 TEST_CASE("Hash set insertion and removal", "[hash_set]") {
   GIVEN("A hash set and a key (qs::string)") {
-    qs::hash_set set;
+    qs::hash_set<qs::string> set;
     qs::string key("key");
 
     WHEN("We insert the key") {
@@ -26,7 +26,7 @@ TEST_CASE("Hash set insertion and removal", "[hash_set]") {
 
 TEST_CASE("Hash set retrieve all keys", "[hash_set]") {
   GIVEN("A hash set ") {
-    qs::hash_set set;
+    qs::hash_set<qs::string> set;
     const int maxi = 10;
     qs::vector<qs::string> arr;
     WHEN("We insert some keys(qs::string)") {

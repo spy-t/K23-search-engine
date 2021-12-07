@@ -6,20 +6,22 @@
 #include <qs/string.h>
 
 namespace qs {
-class hash_set {
-  hash_table<char> table;
+template <class K, class Hash = std::hash<K>> class hash_set {
+  hash_table<K, char> table;
 
 public:
-  void insert(const qs::string &key);
-  void insert(qs::string &&key);
+  void insert(const K &key) { this->table.insert(key, '\0'); }
+  void insert(K &&key) { this->table.insert(std::move(key), '\0'); }
 
-  void remove(const qs::string &key);
+  void remove(const K &key) { this->table.remove(key); }
 
-  bool contains(const qs::string &key);
-  std::size_t get_size();
+  bool contains(const K &key) {
+    return this->table.lookup(key) != this->table.end();
+  }
+  std::size_t get_size() { return this->table.get_size(); }
 
   struct iterator {
-    using ht_iterator = hash_table<char>::iterator;
+    using ht_iterator = typename hash_table<K, char>::iterator;
     friend class hash_set;
 
     using iterator_category = std::forward_iterator_tag;

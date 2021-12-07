@@ -7,8 +7,8 @@ SCENARIO("String concatenation works", "[string]") {
   GIVEN("Two strings") {
     qs::string s1((char *)"String 1");
     qs::string s2((char *)"String 2");
-    REQUIRE(s1.get_length() == 8);
-    REQUIRE(s2.get_length() == 8);
+    REQUIRE(s1.length() == 8);
+    REQUIRE(s2.length() == 8);
 
     WHEN("They are purely concatenated") {
       auto s3 = s1 + s2;
@@ -46,7 +46,7 @@ SCENARIO("String concatenation works", "[string]") {
 SCENARIO("String copy & move semantics work", "[string]") {
   GIVEN("A string") {
     qs::string s1((char *)"String 1");
-    auto size = s1.get_length();
+    auto size = s1.length();
     WHEN("It is assigned to another variable") {
       qs::string s2;
       s2 = s1;
@@ -57,22 +57,18 @@ SCENARIO("String copy & move semantics work", "[string]") {
     WHEN("It is moved to another variable") {
       qs::string s2(std::move(s1));
 
-      REQUIRE(s2.get_length() == size);
+      REQUIRE(s2.length() == size);
 
-      THEN("The old variable is no longer valid") {
-        REQUIRE(s1.get_length() == 0);
-      }
+      THEN("The old variable is no longer valid") { REQUIRE(s1.length() == 0); }
     }
 
     WHEN("It is moved-assigned to another variable") {
       qs::string s2("irrelevant string");
       s2 = std::move(s1);
 
-      REQUIRE(s2.get_length() == size);
+      REQUIRE(s2.length() == size);
 
-      THEN("The old variable is no longer valid") {
-        REQUIRE(s1.get_length() == 0);
-      }
+      THEN("The old variable is no longer valid") { REQUIRE(s1.length() == 0); }
     }
   }
 }

@@ -17,7 +17,7 @@ SCENARIO("qs::skip_list behaves as expected", "[skip_list]") {
   GIVEN("a qs::skip_list") {
     qs::skip_list<qs::string, 10> sl(
         [](const qs::string &a, const qs::string &b) {
-          return std::strcmp(a.get_buffer(), b.get_buffer());
+          return std::strcmp(a.data(), b.data());
         });
 
     WHEN("we insert some strings") {

@@ -7,6 +7,7 @@
 
 #include <qs/core.h>
 #include <qs/functions.hpp>
+#include <qs/hash.h>
 
 namespace qs {
 
@@ -16,10 +17,10 @@ private:
   char *str;
 
   // The size of the underlying buffer. Can be used for efficient concatenating
-  std::size_t capacity;
+  std::size_t cap;
 
   // The size of the string in bytes without the NULL byte
-  std::size_t length;
+  std::size_t len;
 
 public:
   explicit string();
@@ -59,13 +60,13 @@ public:
 
   friend QS_FORCE_INLINE bool operator==(const string &first,
                                          const string &second) {
-    return first.length == second.length &&
-           std::memcmp(first.str, second.str, first.length) == 0;
+    return first.len == second.len &&
+           std::memcmp(first.str, second.str, first.len) == 0;
   }
   friend QS_FORCE_INLINE bool operator==(const string &first,
                                          const char *second) {
-    return first.length == std::strlen(second) &&
-           std::memcmp(first.str, second, first.length) == 0;
+    return first.len == std::strlen(second) &&
+           std::memcmp(first.str, second, first.len) == 0;
   }
 
   friend QS_FORCE_INLINE bool operator!=(const string &first,
@@ -79,59 +80,54 @@ public:
 
   friend QS_FORCE_INLINE bool operator<(const string &first,
                                         const string &second) {
-    return std::memcmp(
-               first.get_buffer(), second.get_buffer(),
-               qs::functions::min(first.get_length(), second.get_length())) < 0;
+    return std::memcmp(first.data(), second.data(),
+                       qs::functions::min(first.length(), second.length())) < 0;
   }
   friend QS_FORCE_INLINE bool operator<(const string &first,
                                         const char *second) {
     return std::memcmp(
-               first.get_buffer(), second,
-               qs::functions::min(first.get_length(), std::strlen(second))) < 0;
+               first.data(), second,
+               qs::functions::min(first.length(), std::strlen(second))) < 0;
   }
   friend QS_FORCE_INLINE bool operator<=(const string &first,
                                          const string &second) {
-    return std::memcmp(first.get_buffer(), second.get_buffer(),
-                       qs::functions::min(first.get_length(),
-                                          second.get_length())) <= 0;
+    return std::memcmp(first.data(), second.data(),
+                       qs::functions::min(first.length(), second.length())) <=
+           0;
   }
 
   friend QS_FORCE_INLINE bool operator<=(const string &first,
                                          const char *second) {
-    return std::memcmp(first.get_buffer(), second,
-                       qs::functions::min(first.get_length(),
-                                          std::strlen(second))) <= 0;
+    return std::memcmp(
+               first.data(), second,
+               qs::functions::min(first.length(), std::strlen(second))) <= 0;
   }
 
   friend QS_FORCE_INLINE bool operator>(const string &first,
                                         const string &second) {
-    return std::memcmp(
-               first.get_buffer(), second.get_buffer(),
-               qs::functions::min(first.get_length(), second.get_length())) > 0;
+    return std::memcmp(first.data(), second.data(),
+                       qs::functions::min(first.length(), second.length())) > 0;
   }
   friend QS_FORCE_INLINE bool operator>(const string &first,
                                         const char *second) {
     return std::memcmp(
-               first.get_buffer(), second,
-               qs::functions::min(first.get_length(), std::strlen(second))) > 0;
+               first.data(), second,
+               qs::functions::min(first.length(), std::strlen(second))) > 0;
   }
   friend QS_FORCE_INLINE bool operator>=(const string &first,
                                          const string &second) {
-    return std::memcmp(first.get_buffer(), second.get_buffer(),
-                       qs::functions::min(first.get_length(),
-                                          second.get_length())) >= 0;
+    return std::memcmp(first.data(), second.data(),
+                       qs::functions::min(first.length(), second.length())) >=
+           0;
   }
   friend QS_FORCE_INLINE bool operator>=(const string &first,
                                          const char *second) {
-    return std::memcmp(first.get_buffer(), second,
-                       qs::functions::min(first.get_length(),
-                                          std::strlen(second))) >= 0;
+    return std::memcmp(
+               first.data(), second,
+               qs::functions::min(first.length(), std::strlen(second))) >= 0;
   }
 
   friend std::ostream &operator<<(std::ostream &out, const string &str);
-
-  std::size_t get_length() const;
-  const char *get_buffer() const;
 
   struct iterator {
     const char *p;
@@ -174,12 +170,21 @@ public:
   };
 
   iterator begin() { return iterator(this->str); }
-  iterator end() { return iterator(&(this->str[this->length])); }
+  iterator end() { return iterator(&(this->str[this->len])); }
 
   auto rbegin() { return std::make_reverse_iterator(this->end()); }
   auto rend() { return std::make_reverse_iterator(this->begin()); }
+  std::size_t length() const;
+  const char *data() const;
 };
 
 } // namespace qs
+
+template <> struct std::hash<qs::string> {
+
+  std::size_t operator()(qs::string const &s) const noexcept {
+    return qs::djb2((const uint8_t *)s.data());
+  }
+};
 
 #endif

@@ -19,7 +19,7 @@ TEST_CASE("Parse file line by line", "[parser]") {
     qs::string test_v("entry");
     int index = 1;
     qs::parse_file(f, '\n', [&](const qs::string &entry) {
-      REQUIRE(entry == test_v.cat(qs::string(index++)));
+      REQUIRE(entry == (test_v + (qs::string(index++))));
     });
     std::fclose(f);
   }
@@ -44,7 +44,7 @@ TEST_CASE("Parse string token by token", "[parser]") {
     std::memcpy(str, t, length + 1);
     int index = 1;
     qs::parse_string(str, "/", [&](const qs::string &entry) {
-      REQUIRE(entry == s.cat(qs::string(index++)));
+      REQUIRE(entry == (s + (qs::string(index++))));
     });
     delete[] str;
   }

@@ -17,7 +17,7 @@ qs::string stringstream::str() {
 
 stringstream &operator<<(stringstream &out, const qs::string &str) {
   out.strings.push(str);
-  out.size += str.get_length();
+  out.size += str.length();
 
   return out;
 }
