@@ -74,73 +74,9 @@ int edit_distance(qs::string s1, qs::string s2) {
 #define EDIT_BUFFER_SIZE 512ull
 #endif
 
-class StrippedStrings {
-public:
-  qs::string s1;
-  qs::string s2;
-
-  explicit StrippedStrings(qs::string &&s1, qs::string &&s2) : s1(s1), s2(s2) {}
-
-  StrippedStrings(StrippedStrings &&other) noexcept
-      : s1(std::move(other.s1)), s2(std::move(other.s2)) {}
-
-  StrippedStrings &operator=(StrippedStrings &&other) noexcept {
-    if (this != &other) {
-      s1 = other.s1;
-      s2 = other.s2;
-    }
-
-    return *this;
-  }
-};
-
-static QS_FORCE_INLINE StrippedStrings
-skip_common_prefix(const qs::string &s1, const qs::string &s2) {
-  auto s1i = ((qs::string)s1).begin();
-  auto s1e = ((qs::string)s1).end();
-  auto s2i = ((qs::string)s2).begin();
-  auto s2e = ((qs::string)s2).end();
-
-  std::size_t offset = 0;
-
-  while (s1i != s1e && s2i != s2e && *s1i == *s2i) {
-    s1i++;
-    s2i++;
-    offset++;
-  }
-
-  return StrippedStrings(qs::string(s1i.operator->()),
-                         qs::string(s2i.operator->()));
-}
-
-static QS_FORCE_INLINE StrippedStrings
-skip_common_suffix(const qs::string &s1, const qs::string &s2) {
-  auto s1i = ((qs::string)s1).rbegin();
-  auto s1e = ((qs::string)s1).rend();
-  auto s2i = ((qs::string)s2).rbegin();
-  auto s2e = ((qs::string)s2).rend();
-
-  auto s1len = (long long)s1.get_length();
-  auto s2len = (long long)s2.get_length();
-
-  while (s1i != s1e && s2i != s2e && *s1i == *s2i) {
-    s1len--;
-    s2len--;
-  }
-  if (s1len == -1) {
-    return StrippedStrings{qs::string(), qs::string(s2i.operator->(), s2len)};
-  } else if (s2len == -1) {
-    return StrippedStrings{
-        qs::string(s1i.operator->(), s1len),
-        qs::string(),
-    };
-  }
-
-  return StrippedStrings{
-      qs::string(s1i.operator->(), s1len),
-      qs::string(s2i.operator->(), s2len),
-  };
-}
+#ifndef MAX_EDIT_DIST
+#define MAX_EDIT_DIST EDIT_BUFFER_SIZE
+#endif
 
 static void init_edit_buffer(std::size_t *buffer, std::size_t len) {
   for (std::size_t i = 0; i < len; i++) {
@@ -148,13 +84,23 @@ static void init_edit_buffer(std::size_t *buffer, std::size_t len) {
   }
 }
 
-int fast_distance_optimized(const qs::string &s1, const qs::string &s2) {
+int fast_distance(const qs::string &s1, const qs::string &s2) {
   if (s1.get_length() == 0 || s2.get_length() == 0) {
     return (int)functions::max(s1.get_length(), s2.get_length());
   }
 
+  const char *start1 = s1.get_buffer();
+  const char *start2 = s2.get_buffer();
+  std::size_t len1 = s1.get_length();
+  std::size_t len2 = s2.get_length();
+  const char *end1 = start1 + len1;
+  const char *end2 = start2 + len2;
+
   // skip common prefix
-  auto pss = skip_common_prefix(s1, (qs::string)s2);
+  while (*start1++ == *start2++ && start1 != end1 && start2 != end2) {
+    len1--;
+    len2--;
+  }
 
   /**
    * if a string A is the prefix of a string B,
@@ -163,59 +109,76 @@ int fast_distance_optimized(const qs::string &s1, const qs::string &s2) {
    * prefix (A)
    * e.g. hello | helloworld
    */
-  if (pss.s1.get_length() == 0) {
-    return (int)pss.s2.get_length();
-  } else if (pss.s2.get_length() == 0) {
-    return (int)pss.s1.get_length();
+  if (len1 == 0) {
+    return (int)len2;
+  } else if (len2 == 0) {
+    return (int)len1;
   }
 
-  auto tmp1 = std::move(pss.s1);
-  auto tmp2 = std::move(pss.s2);
-
-  pss = skip_common_suffix(tmp1, tmp2);
+  // skip common suffix
+  std::size_t common_suffix_len = 0;
+  while (*end1-- == *end2-- && start1 != end1 && start2 != end2) {
+    len1--;
+    len2--;
+    common_suffix_len++;
+  }
 
   /**
    * if a string A is the suffix of a string B,
    * then the edit distance between them is
-   * equal to string B's length
+   * equal to the length of the common suffix
+   * and the rest of the characters of the
+   * bigger word
    * e.g. world | helloworld
    */
-  if (tmp1.get_length() == 0) {
-    return (int)tmp2.get_length();
-  } else if (tmp2.get_length() == 0) {
-    return (int)tmp1.get_length();
+  if (len1 == 0) {
+    return (int)(len2 + common_suffix_len);
+  } else if (len2 == 0) {
+    return (int)(len1 + common_suffix_len);
   }
 
-  auto s1s =
-      std::move(pss.s1.get_length() < pss.s2.get_length() ? pss.s1 : pss.s2);
-  auto s2s =
-      std::move(pss.s1.get_length() < pss.s2.get_length() ? pss.s2 : pss.s1);
+  const char *small;
+  std::size_t small_len;
+  const char *big;
+  std::size_t big_len;
+
+  if (len1 < len2) {
+    small = start1;
+    small_len = len1;
+    big = start2;
+    big_len = len2;
+  } else {
+    small = start2;
+    small_len = len2;
+    big = start1;
+    big_len = len1;
+  }
 
   static std::size_t buffer[EDIT_BUFFER_SIZE];
-  init_edit_buffer(buffer, s2s.get_length() + 1);
+  init_edit_buffer(buffer, big_len + 1);
   std::size_t end_j;
-  for (std::size_t i = 1; i <= s1s.get_length(); i++) {
+  for (std::size_t i = 1; i <= small_len; i++) {
     std::size_t cost = buffer[0]++;
 
     std::size_t start_j =
-        functions::max(1ll, (long long)(i + 1 - EDIT_BUFFER_SIZE / 2));
-    end_j = functions::min((long long)(s2s.get_length() + 1),
-                           (long long)(i + 1 + EDIT_BUFFER_SIZE / 2));
+        functions::max(1ll, (long long)(i - MAX_EDIT_DIST / 2));
+    end_j = functions::min(big_len + 1,
+                           (std::size_t)(i + MAX_EDIT_DIST / 2));
 
-    std::size_t col_min = EDIT_BUFFER_SIZE;
+    std::size_t col_min = MAX_EDIT_DIST;
 
     for (auto j = start_j; j < end_j; j++) {
-      auto insertion = cost;
-      auto deletion = buffer[j];
-      auto substitution = insertion + (s1s[i - 1] != s2s[j - 1]);
+      auto insertion = buffer[j];
+      auto deletion = cost;
+      auto substitution = cost + (small[i - 1] != big[j - 1]);
       cost =
           functions::min(functions::min(insertion, deletion) + 1, substitution);
 
       col_min = functions::min(col_min, cost);
       functions::swap(buffer[j], cost);
     }
-    if (col_min >= EDIT_BUFFER_SIZE) {
-      return EDIT_BUFFER_SIZE;
+    if (col_min >= MAX_EDIT_DIST) {
+      return MAX_EDIT_DIST;
     }
   }
   return (int)buffer[end_j - 1];
