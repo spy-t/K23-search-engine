@@ -19,18 +19,18 @@ TEST_CASE("Edit distance", "[distances]") {
   };
 
   SECTION("'ac' and 'abc'") {
-    REQUIRE(qs::edit_distance(qs::string("ac"), qs::string("abc")) == 1);
+    REQUIRE(qs::fast_distance(qs::string("ac"), qs::string("abc")) == 1);
   };
 
   SECTION("'abc' and 'bc'") {
-    REQUIRE(qs::edit_distance(qs::string("abc"), qs::string("bc")) == 1);
+    REQUIRE(qs::fast_distance(qs::string("abc"), qs::string("bc")) == 1);
   }
 
   SECTION("'hell' and 'help'") {
-    REQUIRE(qs::edit_distance(qs::string("hell"), qs::string("help")) == 1);
+    REQUIRE(qs::fast_distance(qs::string("hell"), qs::string("help")) == 1);
   }
 
   SECTION("'help' and 'troop'") {
-    REQUIRE(qs::edit_distance(qs::string("help"), qs::string("troop")) == 4);
+    REQUIRE(qs::fast_distance(qs::string("help"), qs::string("troop")) == 4);
   }
 }

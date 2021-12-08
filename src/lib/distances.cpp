@@ -85,19 +85,21 @@ static void init_edit_buffer(std::size_t *buffer, std::size_t len) {
 }
 
 int fast_distance(const qs::string &s1, const qs::string &s2) {
-  if (s1.length() == 0 || s2.length() == 0) {
-    return (int)functions::max(s1.length(), s2.length());
+  std::size_t len1 = s1.length();
+  std::size_t len2 = s2.length();
+  if (len1 == 0 || len2 == 0) {
+    return (int)functions::max(len1, len2);
   }
 
   const char *start1 = s1.data();
   const char *start2 = s2.data();
-  std::size_t len1 = s1.length();
-  std::size_t len2 = s2.length();
-  const char *end1 = start1 + len1;
-  const char *end2 = start2 + len2;
+  const char *end1 = start1 + (len1 - 1);
+  const char *end2 = start2 + (len2 - 1);
 
   // skip common prefix
-  while (*start1++ == *start2++ && start1 != end1 && start2 != end2) {
+  while (*start1 == *start2 && start1 != end1 && start2 != end2) {
+    start1++;
+    start2++;
     len1--;
     len2--;
   }
@@ -117,7 +119,9 @@ int fast_distance(const qs::string &s1, const qs::string &s2) {
 
   // skip common suffix
   std::size_t common_suffix_len = 0;
-  while (*end1-- == *end2-- && start1 != end1 && start2 != end2) {
+  while (*end1 == *end2 && start1 != end1 && start2 != end2) {
+    end1--;
+    end2--;
     len1--;
     len2--;
     common_suffix_len++;
