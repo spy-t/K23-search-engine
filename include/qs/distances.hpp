@@ -7,8 +7,7 @@
 namespace qs {
 
 int hamming_distance(qs::string s1, qs::string s2);
-int edit_distance(qs::string s1, qs::string s2);
-int fast_distance(const qs::string &s1, const qs::string &s2);
+int edit_distance(const qs::string &s1, const qs::string &s2);
 
 } // namespace qs
 

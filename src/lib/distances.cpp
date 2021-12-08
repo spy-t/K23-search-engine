@@ -34,157 +34,69 @@ static QS_FORCE_INLINE void set(int *arr, int row, int col, int width,
   arr[row * width + col] = val;
 }
 
-int edit_distance(qs::string s1, qs::string s2) {
-  int l1 = (int)s1.length();
-  int l2 = (int)s2.length();
-
-  int height = l1 + 1;
-  int width = l2 + 1;
-
-  int *d = new int[width * height];
-
-  for (int i = 0; i <= l1; i++) {
-    set(d, i, 0, width, i);
-  }
-
-  for (int j = 0; j <= l2; j++) {
-    set(d, 0, j, width, j);
-  }
-
-  for (int i = 1; i <= l1; i++) {
-    for (int j = 1; j <= l2; j++) {
-      int substitution_cost = s1[i - 1] == s2[j - 1] ? 0 : 1;
-      int deletion = get(d, i - 1, j, width) + 1;
-      int insertion = get(d, i, j - 1, width) + 1;
-      int substitution = get(d, i - 1, j - 1, width) + substitution_cost;
-
-      int min = qs::functions::min(deletion,
-                                   qs::functions::min(insertion, substitution));
-      set(d, i, j, width, min);
-    }
-  }
-
-  int ret = get(d, l1, l2, width);
-  delete[] d;
-
-  return ret;
-}
-
 #ifndef EDIT_BUFFER_SIZE
-#define EDIT_BUFFER_SIZE 512ull
+#define EDIT_BUFFER_SIZE 128ull
 #endif
 
-#ifndef MAX_EDIT_DIST
-#define MAX_EDIT_DIST EDIT_BUFFER_SIZE
-#endif
-
-static void init_edit_buffer(std::size_t *buffer, std::size_t len) {
-  for (std::size_t i = 0; i < len; i++) {
+static QS_FORCE_INLINE void init_edit_buffer(int *buffer, int len) {
+  int i;
+  for (i = 0; i < len; i++) {
     buffer[i] = i;
   }
+  buffer[i] = 1;
 }
 
-int fast_distance(const qs::string &s1, const qs::string &s2) {
-  std::size_t len1 = s1.length();
-  std::size_t len2 = s2.length();
-  if (len1 == 0 || len2 == 0) {
-    return (int)functions::max(len1, len2);
-  }
+#define ROW (i % 2)
+#define NEXT_ROW (!ROW)
+#define DELETION (get(d, NEXT_ROW, j, width) + 1)
+#define INSERTION (get(d, ROW, j - 1, width) + 1)
+#define SUBST                                                                  \
+  (get(d, NEXT_ROW, j - 1, width) + (min_str[i - 1] != max_str[j - 1]))
 
-  const char *start1 = s1.data();
-  const char *start2 = s2.data();
-  const char *end1 = start1 + (len1 - 1);
-  const char *end2 = start2 + (len2 - 1);
+int edit_distance(const qs::string &s1, const qs::string &s2) {
+  static int d[EDIT_BUFFER_SIZE];
+  int max_len = (int)s1.length();
+  auto *max_str = s1.data();
+  int min_len = (int)s2.length();
+  auto *min_str = s2.data();
 
   // skip common prefix
-  while (*start1 == *start2 && start1 != end1 && start2 != end2) {
-    start1++;
-    start2++;
-    len1--;
-    len2--;
+  while (max_len * min_len > 0 && *max_str == *min_str) {
+    max_str++;
+    min_str++;
+    max_len--;
+    min_len--;
   }
-
-  /**
-   * if a string A is the prefix of a string B,
-   * then the edit distance between them is
-   * equal to string B's length without the
-   * prefix (A)
-   * e.g. hello | helloworld
-   */
-  if (len1 == 0) {
-    return (int)len2;
-  } else if (len2 == 0) {
-    return (int)len1;
-  }
-
   // skip common suffix
-  std::size_t common_suffix_len = 0;
-  while (*end1 == *end2 && start1 != end1 && start2 != end2) {
-    end1--;
-    end2--;
-    len1--;
-    len2--;
-    common_suffix_len++;
+  while (max_len * min_len > 0 &&
+         max_str[max_len - 1] == min_str[min_len - 1]) {
+    max_len--;
+    min_len--;
   }
 
-  /**
-   * if a string A is the suffix of a string B,
-   * then the edit distance between them is
-   * equal to the length of the common suffix
-   * and the rest of the characters of the
-   * bigger word
-   * e.g. world | helloworld
-   */
-  if (len1 == 0) {
-    return (int)(len2 + common_suffix_len);
-  } else if (len2 == 0) {
-    return (int)(len1 + common_suffix_len);
+  // check if a string is the prefix/suffix of the other
+  if (max_len * min_len == 0)
+    return functions::max(min_len, max_len);
+
+  if (max_len < min_len) {
+    functions::swap(max_len, min_len);
+    functions::swap(max_str, min_str);
   }
 
-  const char *small;
-  std::size_t small_len;
-  const char *big;
-  std::size_t big_len;
+  int width = max_len + 1;
 
-  if (len1 < len2) {
-    small = start1;
-    small_len = len1;
-    big = start2;
-    big_len = len2;
-  } else {
-    small = start2;
-    small_len = len2;
-    big = start1;
-    big_len = len1;
-  }
+  init_edit_buffer(d, width);
 
-  static std::size_t buffer[EDIT_BUFFER_SIZE];
-  init_edit_buffer(buffer, big_len + 1);
-  std::size_t end_j;
-  for (std::size_t i = 1; i <= small_len; i++) {
-    std::size_t cost = buffer[0]++;
-
-    std::size_t start_j =
-        functions::max(1ll, (long long)(i - MAX_EDIT_DIST / 2));
-    end_j = functions::min(big_len + 1, (std::size_t)(i + MAX_EDIT_DIST / 2));
-
-    std::size_t col_min = MAX_EDIT_DIST;
-
-    for (auto j = start_j; j < end_j; j++) {
-      auto insertion = buffer[j];
-      auto deletion = cost;
-      auto substitution = cost + (small[i - 1] != big[j - 1]);
-      cost =
-          functions::min(functions::min(insertion, deletion) + 1, substitution);
-
-      col_min = functions::min(col_min, cost);
-      functions::swap(buffer[j], cost);
+  int i;
+  for (i = 1; i <= min_len; i++) {
+    for (int j = 1; j <= max_len; j++) {
+      int min =
+          qs::functions::min(DELETION, qs::functions::min(INSERTION, SUBST));
+      set(d, ROW, j, width, min);
     }
-    if (col_min >= MAX_EDIT_DIST) {
-      return MAX_EDIT_DIST;
-    }
+    set(d, NEXT_ROW, 0, width, i + 1);
   }
-  return (int)buffer[end_j - 1];
+  i--;
+  return get(d, ROW, max_len, width);
 }
-
 } // namespace qs
