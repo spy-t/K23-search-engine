@@ -79,6 +79,14 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
         REQUIRE((hell != words.end() && help != words.end()));
       }
     }
+
+    WHEN("Searching for the word 'felt'") {
+      auto res = tree.find(qs::string("felt"));
+      THEN("'felt' is found") {
+        REQUIRE_NOTHROW(res.get());
+        REQUIRE(qs::hamming_distance(res.get(), qs::string("felt")) == 0);
+      }
+    }
   }
 
   GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop, "

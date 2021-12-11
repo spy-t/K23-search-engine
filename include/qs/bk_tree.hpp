@@ -95,6 +95,7 @@ template <typename T> class bk_tree {
 public:
   friend class bk_tree_node<T>;
 
+  bk_tree() = default;
   explicit bk_tree(const distance_func<T> d) : d(d), root(nullptr) {}
   template <class Iter>
   explicit bk_tree(Iter begin, Iter end, const distance_func<T> d)
@@ -129,6 +130,15 @@ public:
     }
     this->root->match(this->d, threshold, query, D, ret);
     return ret;
+  }
+
+  qs::optional<T> find(T what) const {
+    auto res = this->match(0, what);
+    if (res.get_size() != 1) {
+      return qs::optional<T>();
+    } else {
+      return qs::optional<T>(res.head->get());
+    }
   }
 
 #ifdef DEBUG
