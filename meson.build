@@ -18,6 +18,9 @@ libqs_src = [
 
 libqs_static = static_library('qs', libqs_src, include_directories : include)
 
+core_src = ['src/core.cpp']
+core_lib = shared_library('core', core_src, include_directories: include, link_with: libqs_static)
+
 # TODO(spyros): Turn this on when needed
 # search_src = [
 # 	'src/bin/search.cpp',
