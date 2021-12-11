@@ -25,34 +25,15 @@ int hamming_distance(qs::string s1, qs::string s2) {
   return dist;
 }
 
-static QS_FORCE_INLINE int get(int *arr, int row, int col, int width) {
-  return arr[row * width + col];
-}
-
-static QS_FORCE_INLINE void set(int *arr, int row, int col, int width,
-                                int val) {
-  arr[row * width + col] = val;
+static QS_FORCE_INLINE void init_edit_buffer(int *buffer, int len) {
+  for (int i = 0; i < len; i++) {
+    buffer[i] = i;
+  }
 }
 
 #ifndef EDIT_BUFFER_SIZE
-#define EDIT_BUFFER_SIZE 128ull
+#define EDIT_BUFFER_SIZE 64ul
 #endif
-
-static QS_FORCE_INLINE void init_edit_buffer(int *buffer, int len) {
-  int i;
-  for (i = 0; i < len; i++) {
-    buffer[i] = i;
-  }
-  buffer[i] = 1;
-}
-
-#define ROW (i % 2)
-#define NEXT_ROW (!ROW)
-#define DELETION (get(d, NEXT_ROW, j, width) + 1)
-#define INSERTION (get(d, ROW, j - 1, width) + 1)
-#define SUBST                                                                  \
-  (get(d, NEXT_ROW, j - 1, width) + (min_str[i - 1] != max_str[j - 1]))
-#define SAVE(i, j, v) (set(d, ROW, j, width, (v)))
 
 int edit_distance(const qs::string &s1, const qs::string &s2) {
   static int d[EDIT_BUFFER_SIZE];
@@ -83,19 +64,20 @@ int edit_distance(const qs::string &s1, const qs::string &s2) {
     return max_len;
 
   int width = max_len + 1;
-
   init_edit_buffer(d, width);
 
-  int i;
-  for (i = 1; i <= min_len; i++) {
+  for (int i = 1; i <= min_len; i++) {
+    d[0] = i;
+    int prev = i - 1;
     for (int j = 1; j <= max_len; j++) {
-      int min =
-          qs::functions::min(DELETION, qs::functions::min(INSERTION, SUBST));
-      SAVE(ROW, j, min);
+      int sub = prev + (int)(min_str[i - 1] != max_str[j - 1]);
+      int del = d[j - 1];
+      int ins = d[j];
+      prev = d[j];
+      d[j] = functions::min(sub, functions::min(del, ins) + 1);
     }
-    SAVE(NEXT_ROW, 0, i + 1);
   }
-  i--;
-  return get(d, ROW, max_len, width);
+
+  return d[max_len];
 }
 } // namespace qs
