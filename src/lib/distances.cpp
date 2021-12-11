@@ -52,6 +52,7 @@ static QS_FORCE_INLINE void init_edit_buffer(int *buffer, int len) {
 #define INSERTION (get(d, ROW, j - 1, width) + 1)
 #define SUBST                                                                  \
   (get(d, NEXT_ROW, j - 1, width) + (min_str[i - 1] != max_str[j - 1]))
+#define SAVE(i, j, v) (set(d, ROW, j, width, (v)))
 
 int edit_distance(const qs::string &s1, const qs::string &s2) {
   static int d[EDIT_BUFFER_SIZE];
@@ -59,29 +60,27 @@ int edit_distance(const qs::string &s1, const qs::string &s2) {
   auto *max_str = s1.data();
   int min_len = (int)s2.length();
   auto *min_str = s2.data();
+  if (max_len < min_len) {
+    functions::swap(max_len, min_len);
+    functions::swap(max_str, min_str);
+  }
 
   // skip common prefix
-  while (max_len * min_len > 0 && *max_str == *min_str) {
+  while (min_len > 0 && *max_str == *min_str) {
     max_str++;
     min_str++;
     max_len--;
     min_len--;
   }
   // skip common suffix
-  while (max_len * min_len > 0 &&
-         max_str[max_len - 1] == min_str[min_len - 1]) {
+  while (min_len > 0 && max_str[max_len - 1] == min_str[min_len - 1]) {
     max_len--;
     min_len--;
   }
 
   // check if a string is the prefix/suffix of the other
-  if (max_len * min_len == 0)
-    return functions::max(min_len, max_len);
-
-  if (max_len < min_len) {
-    functions::swap(max_len, min_len);
-    functions::swap(max_str, min_str);
-  }
+  if (min_len == 0)
+    return max_len;
 
   int width = max_len + 1;
 
@@ -92,9 +91,9 @@ int edit_distance(const qs::string &s1, const qs::string &s2) {
     for (int j = 1; j <= max_len; j++) {
       int min =
           qs::functions::min(DELETION, qs::functions::min(INSERTION, SUBST));
-      set(d, ROW, j, width, min);
+      SAVE(ROW, j, min);
     }
-    set(d, NEXT_ROW, 0, width, i + 1);
+    SAVE(NEXT_ROW, 0, i + 1);
   }
   i--;
   return get(d, ROW, max_len, width);
