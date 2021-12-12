@@ -21,12 +21,17 @@ qs::hash_table<qs::string , qs::vector<Query *>> *exact;
 qs::bk_tree<entry> *edit;
 qs::bk_tree<entry> hamming[MAX_WORD_LENGTH - MIN_WORD_LENGTH];
 
+qs::edit_dist<qs::vector<Query *>*> *edit_functor;
+qs::hamming_dist<qs::vector<Query *>*> *hamming_functor;
+
 ErrorCode InitializeIndex() {
   queries = new qs::hash_table<QueryID , Query *>();
   exact = new qs::hash_table<qs::string , qs::vector<Query *>>();
-  edit = new qs::bk_tree<entry>(entry::edit_distance);
+  edit_functor = new qs::edit_dist<qs::vector<Query *>*>();
+  hamming_functor = new qs::hamming_dist<qs::vector<Query *>*>();
+  edit = new qs::bk_tree<entry>(edit_functor);
   for (auto & i : hamming) {
-    i = qs::bk_tree<entry>(entry::hamming_distance);
+    i = qs::bk_tree<entry>(hamming_functor);
   }
   return EC_SUCCESS;
 }
@@ -114,6 +119,9 @@ ErrorCode StartQuery(QueryID        query_id,
 
 ErrorCode EndQuery(QueryID query_id) {
   auto i = queries->lookup(query_id);
+  if (i == queries->end()) {
+    return EC_FAIL;
+  }
   (**i)->active = false;
   return EC_SUCCESS;
 }
