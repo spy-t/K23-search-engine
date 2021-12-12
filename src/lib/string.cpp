@@ -1,9 +1,4 @@
-#include <cstdint>
-#include <cstdlib>
 #include <cstring>
-#include <qs/core.h>
-#include <qs/error.h>
-#include <qs/functions.hpp>
 #include <qs/string.h>
 #include <qs/vector.hpp>
 #include <stdexcept>
@@ -99,7 +94,7 @@ string &string::cat(const string &other) {
   } else {
     auto new_str = new char[this->len + other.len + 1];
     std::memcpy(new_str, this->str, this->len);
-    std::memcpy(new_str + this->len, other.str, other.len);
+    std::memcpy(new_str + this->len, other.str, other.len + 1);
     delete[] this->str;
     this->str = new_str;
     this->cap = this->len + other.len + 1;
