@@ -6,8 +6,9 @@
 
 TEST_CASE("Deduplication", "[deduplication]") {
   GIVEN("A file containing 10 strings with 5 of them being unique") {
-    const char *filepath = "../src/test/resources/5unique_test.txt";
+    const char *filepath = "./src/test/resources/5unique_test.txt";
     FILE *f = std::fopen(filepath, "r");
+    REQUIRE(f);
     WHEN("We insert entries into the hash set") {
       qs::hash_set<qs::string> set;
       qs::parse_file(f, '\n',

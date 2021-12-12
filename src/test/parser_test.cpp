@@ -5,8 +5,9 @@
 
 TEST_CASE("Parse file line by line", "[parser]") {
   SECTION("SMALL TEST") {
-    const char *filepath = "../src/test/resources/small_test.txt";
+    const char *filepath = "./src/test/resources/small_test.txt";
     FILE *f = std::fopen(filepath, "r");
+    REQUIRE(f);
     qs::parse_file(f, '\n', [](const qs::string &entry) {
       REQUIRE(entry == "test_entry");
     });
@@ -14,10 +15,11 @@ TEST_CASE("Parse file line by line", "[parser]") {
   }
 
   SECTION("MEDIUM TEST") {
-    const char *filepath = "../src/test/resources/med_test.txt";
+    const char *filepath = "./src/test/resources/med_test.txt";
     FILE *f = std::fopen(filepath, "r");
     qs::string test_v("entry");
     int index = 1;
+    REQUIRE(f);
     qs::parse_file(f, '\n', [&](const qs::string &entry) {
       REQUIRE(entry == (test_v + (qs::string(index++))));
     });
