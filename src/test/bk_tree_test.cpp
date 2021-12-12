@@ -24,7 +24,28 @@ void check_children(qs::bk_tree_node<qs::string> *node, const char *strings[],
       });
 }
 
+struct hamming : public qs::distance_func<qs::string> {
+  int operator()(const qs::string &a, const qs::string &b) const override {
+    return qs::hamming_distance(a, b);
+  }
+  int operator()(const qs::string &a, const qs::string &b, int max) const override {
+    return qs::hamming_distance(a, b, max);
+  }
+};
+
+struct edit : public qs::distance_func<qs::string> {
+  int operator()(const qs::string &a, const qs::string &b) const override {
+    return qs::edit_distance(a, b);
+  }
+  int operator()(const qs::string &a, const qs::string &b, int max) const override {
+    return qs::edit_distance(a, b, max);
+  }
+};
+
 SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
+  auto ham = hamming();
+  auto edi = edit();
+
   GIVEN("The strings: hell, help, fall, felt, fell, smal, melt and using"
         " hamming distance") {
     qs::vector<qs::string> word_vec(7);
@@ -35,7 +56,7 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
     word_vec.push(qs::string("fell"));
     word_vec.push(qs::string("smal"));
     word_vec.push(qs::string("melt"));
-    auto tree = qs::bk_tree<qs::string>(word_vec, qs::hamming_distance);
+    auto tree = qs::bk_tree(word_vec, &ham);
 
     THEN("'hell' is the root") {
       auto r = tree.get_root();
@@ -84,7 +105,7 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
       auto res = tree.find(qs::string("felt"));
       THEN("'felt' is found") {
         REQUIRE_NOTHROW(res.get());
-        REQUIRE(qs::hamming_distance(res.get(), qs::string("felt")) == 0);
+        REQUIRE(ham(res.get(), qs::string("felt")) == 0);
       }
     }
   }
@@ -92,7 +113,7 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
   GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop, "
         "helped and "
         "using edit distance") {
-    auto tree = qs::bk_tree<qs::string>(qs::edit_distance);
+    auto tree = qs::bk_tree<qs::string>(&edi);
     tree.insert(qs::string("help"));
     tree.insert(qs::string("hell"));
     tree.insert(qs::string("hello"));
@@ -176,7 +197,7 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
   }
 
   GIVEN("No strings") {
-    auto tree = qs::bk_tree<qs::string>(qs::hamming_distance);
+    auto tree = qs::bk_tree<qs::string>(&ham);
     REQUIRE(tree.get_root() == nullptr);
     THEN("Matching returns nothing") {
       auto words = tree.match(0, qs::string("str"));
