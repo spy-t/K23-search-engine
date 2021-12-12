@@ -5,21 +5,17 @@
 #include <string>
 
 #include <qs/bk_tree.hpp>
-#include <qs/distances.hpp>
 #include <qs/entry.hpp>
-#include <qs/functions.hpp>
 #include <qs/hash_set.hpp>
-#include <qs/list.hpp>
 #include <qs/parser.hpp>
 #include <qs/string.h>
-#include <qs/vector.hpp>
 #include <type_traits>
 
 int threshold = -1;
 std::string query_file;
 std::string word_file;
 std::string distance_function;
-qs::distance_func<qs::entry<char>> dist;
+qs::distance_func<qs::entry<char>> *dist;
 
 int main(int argc, char *argv[]) {
   Catch::Session session;
@@ -43,9 +39,9 @@ int main(int argc, char *argv[]) {
   }
 
   if (distance_function == "edit") {
-    dist = qs::entry<char>::edit_distance;
+    dist = new qs::edit_dist<char>();
   } else if (distance_function == "hamming") {
-    dist = qs::entry<char>::hamming_distance;
+    dist = new qs::hamming_dist<char>();
   } else {
     std::cout << "The distance function provided is not supported [edit, "
                  "hamming]\n";
@@ -82,5 +78,6 @@ SCENARIO("main") {
     bk.match(threshold, qs::entry(entry, '\0'));
   });
 
+  delete dist;
   std::fclose(tf);
 }
