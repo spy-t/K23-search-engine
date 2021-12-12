@@ -12,8 +12,12 @@
 namespace qs {
 
 #define QS_BK_TREE_SKIP_LIST_LEVELS 16
+template <typename T> struct distance_func {
+  virtual ~distance_func() = default;
+  virtual int operator()(const T &a, const T &b) const = 0;
+  virtual int operator()(const T &a, const T &b, int max) const = 0;
+};
 
-template <typename T> using distance_func = std::function<int(T &a, T &b)>;
 template <typename T> class bk_tree;
 
 template <typename V> class bk_tree_node {
@@ -29,7 +33,7 @@ template <typename V> class bk_tree_node {
   int distance_from_parent{};
   node_list children;
 
-  void add_child(node_p new_child, distance_func<V> dist_func) {
+  void add_child(node_p new_child, const distance_func<V> &dist_func) {
     if (this->children.get_size() > 0) {
       new_child->distance_from_parent = dist_func(this->data, new_child->data);
       auto result = this->children.find(new_child);
@@ -44,17 +48,17 @@ template <typename V> class bk_tree_node {
     }
   }
 
-  void add_child(V child_data, distance_func<V> dist_func) {
+  void add_child(V child_data, const distance_func<V> &dist_func) {
     auto new_child = new bk_tree_node<V>(child_data);
     this->add_child(new_child, dist_func);
   }
 
-  void match(const distance_func<V> dist_func, int threshold, V query,
+  void match(const distance_func<V> &dist_func, int threshold, V query,
              int parent_to_query, qs::linked_list<V> &result) {
     int lower_bound = parent_to_query - threshold;
     int upper_bound = parent_to_query + threshold;
     for (auto i = this->children.begin(); i != this->children.end(); i++) {
-      int dist = dist_func((*i)->data, query);
+      int dist = dist_func((*i)->data, query, upper_bound);
       if (dist <= threshold) {
         result.append((*i)->data);
       }
@@ -89,16 +93,16 @@ public:
 template <typename T> class bk_tree {
   using node_p = bk_tree_node<T> *;
 
-  distance_func<T> d;
+  const distance_func<T> *d;
   node_p root;
 
 public:
   friend class bk_tree_node<T>;
 
   bk_tree() = default;
-  explicit bk_tree(const distance_func<T> d) : d(d), root(nullptr) {}
+  explicit bk_tree(const distance_func<T> *d) : d(d), root(nullptr) {}
   template <class Iter>
-  explicit bk_tree(Iter begin, Iter end, const distance_func<T> d)
+  explicit bk_tree(Iter begin, Iter end, const distance_func<T> *d)
       : d(d), root(nullptr) {
     while (begin != end) {
       this->insert(*begin);
@@ -106,7 +110,7 @@ public:
     }
   }
   template <class Iterable>
-  explicit bk_tree(Iterable &it, const distance_func<T> d)
+  explicit bk_tree(Iterable &it, const distance_func<T> *d)
       : bk_tree(it.begin(), it.end(), d) {}
 
   ~bk_tree() { delete this->root; }
@@ -115,7 +119,7 @@ public:
     if (this->root == nullptr) {
       this->root = new bk_tree_node<T>(data);
     } else {
-      this->root->add_child(data, this->d);
+      this->root->add_child(data, *d);
     }
   }
 
@@ -124,11 +128,11 @@ public:
       return qs::linked_list<T>();
     }
     auto ret = qs::linked_list<T>();
-    int D = this->d(query, this->root->data);
+    int D = (*d)(query, this->root->data);
     if (D <= threshold) {
       ret.append(this->root->data);
     }
-    this->root->match(this->d, threshold, query, D, ret);
+    this->root->match(*d, threshold, query, D, ret);
     return ret;
   }
 
