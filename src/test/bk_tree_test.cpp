@@ -28,7 +28,8 @@ struct hamming : public qs::distance_func<qs::string> {
   int operator()(const qs::string &a, const qs::string &b) const override {
     return qs::hamming_distance(a, b);
   }
-  int operator()(const qs::string &a, const qs::string &b, int max) const override {
+  int operator()(const qs::string &a, const qs::string &b,
+                 int max) const override {
     return qs::hamming_distance(a, b, max);
   }
 };
@@ -37,7 +38,8 @@ struct edit : public qs::distance_func<qs::string> {
   int operator()(const qs::string &a, const qs::string &b) const override {
     return qs::edit_distance(a, b);
   }
-  int operator()(const qs::string &a, const qs::string &b, int max) const override {
+  int operator()(const qs::string &a, const qs::string &b,
+                 int max) const override {
     return qs::edit_distance(a, b, max);
   }
 };
