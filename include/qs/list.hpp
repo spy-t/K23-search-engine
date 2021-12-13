@@ -100,7 +100,7 @@ public:
     auto iter = other.head;
     while (iter != nullptr) {
       this->append(iter->get());
-      iter = iter->next;
+      iter = iter->next_node;
     }
   }
   linked_list<V> &operator=(const linked_list<V> &other) {

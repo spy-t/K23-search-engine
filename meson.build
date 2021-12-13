@@ -71,3 +71,10 @@ end_to_end_tests = executable('end_to_end_tests',
 )
 
 test('end_to_end_tests', end_to_end_tests)
+
+hash_table_benchmark = executable('hash_table_benchmark',
+  sources : ['src/test/hash_table_benchmark.cpp'],
+  link_with : libqs_static,
+  include_directories : include,
+  cpp_args : '-DDEBUG'
+)

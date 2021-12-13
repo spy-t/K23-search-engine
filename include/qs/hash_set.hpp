@@ -26,7 +26,7 @@ public:
 
     using iterator_category = std::forward_iterator_tag;
     using difference_type = std::ptrdiff_t;
-    using value_type = const qs::string;
+    using value_type = const K;
     using pointer = value_type *;
     using reference = value_type &;
 
@@ -36,8 +36,8 @@ public:
     explicit iterator(ht_iterator iter) : iter(iter) {}
 
   public:
-    reference operator*() { return iter->get_key(); }
-    pointer operator->() { return &this->iter->get_key(); }
+    reference operator*() { return *this->operator->(); }
+    pointer operator->() { return &iter.current->get().get_key(); }
 
     iterator &operator++() {
       ++iter;
