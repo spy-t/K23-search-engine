@@ -57,8 +57,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
 
   switch (match_type) {
   case MT_EDIT_DIST:
-    for (auto &unique_word : unique_words) {
-      entry &en = *unique_word;
+    for (auto & en : unique_words) {
       auto found = edit->find(en);
       qs::vector<Query *> *qvec;
       if (found.is_empty()) {
@@ -72,8 +71,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
     }
     break;
   case MT_HAMMING_DIST:
-    for (auto &unique_word : unique_words) {
-      entry &en = *unique_word;
+    for (auto & en : unique_words) {
       auto hamming_tree = hamming[en.word.length() - MIN_WORD_LENGTH];
       auto found = hamming_tree.find(en);
       qs::vector<Query *> *qvec;
@@ -88,15 +86,14 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
     }
     break;
   case MT_EXACT_MATCH:
-    for (auto &unique_word : unique_words) {
-      entry &en = *unique_word;
+    for (auto & en : unique_words) {
       auto f = exact->lookup(en.word);
       qs::vector<Query *> *qvec;
       if (f == exact->end()) {
         qvec = new qs::vector<Query *>();
         exact->insert(en.word, *qvec);
       } else {
-        qvec = &(f->get());
+        qvec = &(*f);
       }
       qvec->push(q);
     }
@@ -116,16 +113,16 @@ ErrorCode EndQuery(QueryID query_id) {
   if (i == queries->end()) {
     return EC_FAIL;
   }
-  (**i)->active = false;
+  (*i)->active = false;
   return EC_SUCCESS;
 }
 
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   for (auto &q : *queries) {
     auto query = *q;
-    if (!query->active)
+    if (!query.active)
       continue;
-    switch (query->match_type) {
+    switch (query.match_type) {
     case MT_EXACT_MATCH:
     case MT_EDIT_DIST:
     case MT_HAMMING_DIST:
