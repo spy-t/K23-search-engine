@@ -14,6 +14,7 @@ struct Query {
   unsigned int word_count;
 };
 
+qs::oa_hash_table<QueryID, Query *> *queries;
 struct QueryResult {
   Query* query;
   unsigned int word_found;
@@ -27,24 +28,23 @@ struct DocumentResults {
 
 qs::hash_table<QueryID, Query *> *queries;
 
-using entry = qs::entry<qs::vector<Query *> *>;
+using qvec = qs::vector<Query *>;
+using entry = qs::entry<qvec *>;
 
-qs::hash_table<qs::string, qs::vector<Query *>> *exact;
-
+qs::oa_hash_table<qs::string, qvec> *exact;
 qs::bk_tree<entry> *edit;
 qs::bk_tree<entry> hamming[MAX_WORD_LENGTH - MIN_WORD_LENGTH];
 
-qs::edit_dist<qs::vector<Query *> *> *edit_functor;
-qs::hamming_dist<qs::vector<Query *> *> *hamming_functor;
+qs::edit_dist<qvec *> *edit_functor;
+qs::hamming_dist<qvec *> *hamming_functor;
 
 // Always the last is the results of the active doc
 qs::vector<DocumentResults *> * results;
 ErrorCode InitializeIndex() {
-  queries = new qs::hash_table<QueryID, Query *>();
-  results = new qs::vector<DocumentResults *>();
-  exact = new qs::hash_table<qs::string, qs::vector<Query *>>();
-  edit_functor = new qs::edit_dist<qs::vector<Query *> *>();
-  hamming_functor = new qs::hamming_dist<qs::vector<Query *> *>();
+  queries = new qs::oa_hash_table<QueryID, Query *>();
+  exact = new qs::oa_hash_table<qs::string, qvec>();
+  edit_functor = new qs::edit_dist<qvec *>();
+  hamming_functor = new qs::hamming_dist<qvec *>();
   edit = new qs::bk_tree<entry>(edit_functor);
   for (auto &i : hamming) {
     i = qs::bk_tree<entry>(hamming_functor);
@@ -55,12 +55,39 @@ ErrorCode InitializeIndex() {
 ErrorCode DestroyIndex() {
   delete queries;
   delete exact;
+  delete hamming_functor;
+  delete edit_functor;
   delete edit;
   return EC_SUCCESS;
 }
 
+static void add_to_tree(Query *q, entry &en, qs::bk_tree<entry> &tree) {
+#ifdef DEBUG
+  auto qu = queries;
+  auto ex = exact;
+  auto ed = edit;
+  auto h = hamming;
+#endif
+  auto found = tree.find(en);
+  qvec *qv;
+  if (found.is_empty()) {
+    qv = new qvec();
+    en.payload = qv;
+    tree.insert(en);
+  } else {
+    qv = found.get().payload;
+  }
+  qv->push(q);
+}
+
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
+#ifdef DEBUG
+  auto qu = queries;
+  auto ex = exact;
+  auto ed = edit;
+  auto h = hamming;
+#endif
   auto q = new Query{
       query_id, true, match_type, match_dist, 0,
   };
@@ -70,61 +97,43 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
     q->word_count++;
     unique_words.insert(word, entry(word, nullptr));
   });
+  free(q_str);
 
-  switch (match_type) {
-  case MT_EDIT_DIST:
+  if (match_type == MT_EDIT_DIST) {
     for (auto & en : unique_words) {
-      auto found = edit->find(en);
-      qs::vector<Query *> *qvec;
-      if (found.is_empty()) {
-        qvec = new qs::vector<Query *>();
-        en.payload = qvec;
-        edit->insert(en);
-      } else {
-        qvec = found.get().payload;
-      }
-      qvec->push(q);
+      add_to_tree(q, en, *edit);
     }
-    break;
-  case MT_HAMMING_DIST:
-    for (auto & en : unique_words) {
-      auto hamming_tree = hamming[en.word.length() - MIN_WORD_LENGTH];
-      auto found = hamming_tree.find(en);
-      qs::vector<Query *> *qvec;
-      if (found.is_empty()) {
-        qvec = new qs::vector<Query *>();
-        en.payload = qvec;
-        hamming_tree.insert(std::move(en));
-      } else {
-        qvec = found.get().payload;
-      }
-      qvec->push(q);
+  } else if (match_type == MT_HAMMING_DIST) {
+    for (auto & en: unique_words) {
+      add_to_tree(q, en, hamming[en.word.length() - MIN_WORD_LENGTH]);
     }
-    break;
-  case MT_EXACT_MATCH:
-    for (auto & en : unique_words) {
+  } else if (match_type == MT_EXACT_MATCH) {
+    for (auto &en : unique_words) {
       auto f = exact->lookup(en.word);
-      qs::vector<Query *> *qvec;
+      qvec *qv;
       if (f == exact->end()) {
-        qvec = new qs::vector<Query *>();
-        exact->insert(en.word, *qvec);
+        qv = new qvec();
+        exact->insert(en.word, *qv);
       } else {
-        qvec = &(*f);
+        qv = &(*f);
       }
-      qvec->push(q);
+      qv->push(q);
     }
-    break;
-  default:
-    free(q_str);
+  } else {
     delete q;
     return EC_FAIL;
   }
   queries->insert(query_id, q);
-  free(q_str);
   return EC_SUCCESS;
 }
 
 ErrorCode EndQuery(QueryID query_id) {
+#ifdef DEBUG
+  auto qu = queries;
+  auto ex = exact;
+  auto ed = edit;
+  auto h = hamming;
+#endif
   auto i = queries->lookup(query_id);
   if (i == queries->end()) {
     return EC_FAIL;
@@ -169,6 +178,11 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
 
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
+#ifdef DEBUG
+  auto qu = queries;
+  auto ex = exact;
+  auto ed = edit;
+  auto h = hamming;
+#endif
   return EC_SUCCESS;
 }
-9
