@@ -12,17 +12,11 @@
 namespace qs {
 
 #define QS_BK_TREE_SKIP_LIST_LEVELS 16
-template <typename T> struct distance_func {
-  virtual ~distance_func() = default;
-  virtual int operator()(const T &a, const T &b) const = 0;
-  virtual int operator()(const T &a, const T &b, int max) const = 0;
-};
+template <typename T, typename D> class bk_tree;
 
-template <typename T> class bk_tree;
-
-template <typename V> class bk_tree_node {
-  friend class bk_tree<V>;
-  using node_p = bk_tree_node<V> *;
+template <typename V, typename D> class bk_tree_node {
+  friend class bk_tree<V, D>;
+  using node_p = bk_tree_node<V, D> *;
   using node_list = skip_list<node_p, QS_BK_TREE_SKIP_LIST_LEVELS>;
 
   static int sl_compare_func(const node_p &n1, const node_p &n2) {
@@ -32,8 +26,9 @@ template <typename V> class bk_tree_node {
   V data;
   int distance_from_parent{};
   node_list children;
+  D dist_func{};
 
-  void add_child(node_p new_child, const distance_func<V> &dist_func) {
+  void add_child(node_p new_child) {
     if (this->children.get_size() > 0) {
       new_child->distance_from_parent = dist_func(this->data, new_child->data);
       auto result = this->children.find(new_child);
@@ -48,12 +43,12 @@ template <typename V> class bk_tree_node {
     }
   }
 
-  void add_child(V child_data, const distance_func<V> &dist_func) {
-    auto new_child = new bk_tree_node<V>(child_data);
-    this->add_child(new_child, dist_func);
+  void add_child(V child_data) {
+    auto new_child = new bk_tree_node<V, D>(child_data);
+    this->add_child(new_child);
   }
 
-  void match(const distance_func<V> &dist_func, int threshold, V query,
+  void match(int threshold, V query,
              int parent_to_query, qs::linked_list<V> &result) {
     int lower_bound = parent_to_query - threshold;
     int upper_bound = parent_to_query + threshold;
@@ -66,7 +61,7 @@ template <typename V> class bk_tree_node {
       if ((*i)->distance_from_parent < lower_bound) {
         continue;
       } else if ((*i)->distance_from_parent <= upper_bound) {
-        (*i)->match(dist_func, threshold, query, dist, result);
+        (*i)->match(threshold, query, dist, result);
       } else {
         break;
       }
@@ -90,36 +85,34 @@ public:
 #endif
 };
 
-template <typename T> class bk_tree {
-  using node_p = bk_tree_node<T> *;
+template <typename T,typename D> class bk_tree {
+  using node_p = bk_tree_node<T,D> *;
 
-  const distance_func<T> *d;
   node_p root;
-
+  D dist_func{};
 public:
-  friend class bk_tree_node<T>;
+  friend class bk_tree_node<T,D>;
 
-  bk_tree() = default;
-  explicit bk_tree(const distance_func<T> *d) : d(d), root(nullptr) {}
+  explicit bk_tree() : root(nullptr) {}
   template <class Iter>
-  explicit bk_tree(Iter begin, Iter end, const distance_func<T> *d)
-      : d(d), root(nullptr) {
+  explicit bk_tree(Iter begin, Iter end)
+      : root(nullptr) {
     while (begin != end) {
       this->insert(*begin);
       begin++;
     }
   }
   template <class Iterable>
-  explicit bk_tree(Iterable &it, const distance_func<T> *d)
-      : bk_tree(it.begin(), it.end(), d) {}
+  explicit bk_tree(Iterable &it)
+      : bk_tree(it.begin(), it.end()) {}
 
   ~bk_tree() { delete this->root; }
 
   void insert(T data) {
     if (this->root == nullptr) {
-      this->root = new bk_tree_node<T>(data);
+      this->root = new bk_tree_node<T,D>(data);
     } else {
-      this->root->add_child(data, *d);
+      this->root->add_child(data);
     }
   }
 
@@ -128,11 +121,11 @@ public:
       return qs::linked_list<T>();
     }
     auto ret = qs::linked_list<T>();
-    int D = (*d)(query, this->root->data);
-    if (D <= threshold) {
+    int d = dist_func(query, this->root->data);
+    if (d <= threshold) {
       ret.append(this->root->data);
     }
-    this->root->match(*d, threshold, query, D, ret);
+    this->root->match(threshold, query, d, ret);
     return ret;
   }
 
@@ -146,7 +139,7 @@ public:
   }
 
 #ifdef DEBUG
-  bk_tree_node<T> *get_root() const { return this->root; }
+  bk_tree_node<T, D> *get_root() const { return this->root; }
 #endif
 };
 
