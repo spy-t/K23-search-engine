@@ -25,9 +25,6 @@ struct DocumentResults {
   qs::hash_table<QueryID , QueryResult *>* results;
 };
 
-
-qs::hash_table<QueryID, Query *> *queries;
-
 using qvec = qs::vector<Query *>;
 using entry = qs::entry<qvec *>;
 
