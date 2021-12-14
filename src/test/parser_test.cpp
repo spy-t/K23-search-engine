@@ -5,7 +5,7 @@
 
 TEST_CASE("Parse file line by line", "[parser]") {
   SECTION("SMALL TEST") {
-    const char *filepath = "./src/test/resources/small_test.txt";
+    const char *filepath = "./src/test/resources/test_entry.txt";
     FILE *f = std::fopen(filepath, "r");
     REQUIRE(f);
     qs::parse_file(f, '\n', [](const qs::string &entry) {
