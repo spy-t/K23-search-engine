@@ -14,7 +14,7 @@ struct Query {
   unsigned int word_count;
 };
 
-qs::oa_hash_table<QueryID, Query *> *queries;
+static qs::oa_hash_table<QueryID, Query *> queries;
 struct QueryResult {
   Query *query;
   unsigned int word_found;
@@ -22,48 +22,49 @@ struct QueryResult {
 
 struct DocumentResults {
   DocID docId;
-  qs::hash_table<QueryID, QueryResult *> *results;
+  qs::hash_table<QueryID, QueryResult> results;
 };
 
 using qvec = qs::vector<Query *>;
 using entry = qs::entry<qvec *>;
 
-qs::oa_hash_table<qs::string, qvec> *exact;
-qs::bk_tree<entry> *edit;
-qs::bk_tree<entry> hamming[MAX_WORD_LENGTH - MIN_WORD_LENGTH];
+static qs::oa_hash_table<qs::string, qvec> exact;
 
-qs::edit_dist<qvec *> *edit_functor;
-qs::hamming_dist<qvec *> *hamming_functor;
+static qs::edit_dist<qvec *> edit_functor;
+static qs::hamming_dist<qvec *> hamming_functor;
+
+static qs::bk_tree<entry> &edit_bk_tree() {
+  static qs::bk_tree<entry> edit_bk{&edit_functor};
+
+  return edit_bk;
+}
+
+constexpr int HAMMING_BK_TREES = MAX_WORD_LENGTH - MIN_WORD_LENGTH;
+static qs::bk_tree<entry> *hamming_bk_trees() {
+  static bool is_initialized = false;
+  static qs::bk_tree<entry> bk_trees[HAMMING_BK_TREES];
+  if (!is_initialized) {
+    for (std::size_t i = 0; i < HAMMING_BK_TREES; ++i) {
+      bk_trees[i] = qs::bk_tree<entry>{&hamming_functor};
+    }
+    is_initialized = true;
+  }
+
+  return bk_trees;
+}
 
 // Always the last is the results of the active doc
-qs::vector<DocumentResults *> *results;
-ErrorCode InitializeIndex() {
-  queries = new qs::oa_hash_table<QueryID, Query *>();
-  exact = new qs::oa_hash_table<qs::string, qvec>();
-  edit_functor = new qs::edit_dist<qvec *>();
-  hamming_functor = new qs::hamming_dist<qvec *>();
-  edit = new qs::bk_tree<entry>(edit_functor);
-  for (auto &i : hamming) {
-    i = qs::bk_tree<entry>(hamming_functor);
-  }
-  return EC_SUCCESS;
-}
+static qs::vector<DocumentResults *> results;
+ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
-ErrorCode DestroyIndex() {
-  delete queries;
-  delete exact;
-  delete hamming_functor;
-  delete edit_functor;
-  delete edit;
-  return EC_SUCCESS;
-}
+ErrorCode DestroyIndex() { return EC_SUCCESS; }
 
 static void add_to_tree(Query *q, entry &en, qs::bk_tree<entry> &tree) {
 #ifdef DEBUG
-  auto qu = queries;
-  auto ex = exact;
-  auto ed = edit;
-  auto h = hamming;
+  auto &qu = queries;
+  auto &ex = exact;
+  auto &ed = edit_bk_tree();
+  auto h = hamming_bk_trees();
 #endif
   auto found = tree.find(en);
   qvec *qv;
@@ -80,10 +81,10 @@ static void add_to_tree(Query *q, entry &en, qs::bk_tree<entry> &tree) {
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
 #ifdef DEBUG
-  auto qu = queries;
-  auto ex = exact;
-  auto ed = edit;
-  auto h = hamming;
+  auto &qu = queries;
+  auto &ex = exact;
+  auto &ed = edit_bk_tree();
+  auto h = hamming_bk_trees();
 #endif
   auto q = new Query{
       query_id, true, match_type, match_dist, 0,
@@ -98,19 +99,20 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
 
   if (match_type == MT_EDIT_DIST) {
     for (auto &en : unique_words) {
-      add_to_tree(q, en, *edit);
+      add_to_tree(q, en, edit_bk_tree());
     }
   } else if (match_type == MT_HAMMING_DIST) {
     for (auto &en : unique_words) {
-      add_to_tree(q, en, hamming[en.word.length() - MIN_WORD_LENGTH]);
+      add_to_tree(q, en,
+                  hamming_bk_trees()[en.word.length() - MIN_WORD_LENGTH]);
     }
   } else if (match_type == MT_EXACT_MATCH) {
     for (auto &en : unique_words) {
-      auto f = exact->lookup(en.word);
+      auto f = exact.lookup(en.word);
       qvec *qv;
-      if (f == exact->end()) {
+      if (f == exact.end()) {
         qv = new qvec();
-        exact->insert(en.word, *qv);
+        exact.insert(en.word, *qv);
       } else {
         qv = &(*f);
       }
@@ -120,19 +122,19 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
     delete q;
     return EC_FAIL;
   }
-  queries->insert(query_id, q);
+  queries.insert(query_id, q);
   return EC_SUCCESS;
 }
 
 ErrorCode EndQuery(QueryID query_id) {
 #ifdef DEBUG
-  auto qu = queries;
-  auto ex = exact;
-  auto ed = edit;
-  auto h = hamming;
+  auto &qu = queries;
+  auto &ex = exact;
+  auto &ed = edit_bk_tree();
+  auto h = hamming_bk_trees();
 #endif
-  auto i = queries->lookup(query_id);
-  if (i == queries->end()) {
+  auto i = queries.lookup(query_id);
+  if (i == queries.end()) {
     return EC_FAIL;
   }
   (*i)->active = false;
@@ -143,9 +145,8 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   char *q_str = strdup(doc_str);
   qs::hash_set<qs::string> dedu;
   qs::parse_string(q_str, " ", [&](qs::string &word) { dedu.insert(word); });
-  auto queryResults = new qs::hash_table<QueryID, QueryResult *>();
-  auto docRes = new DocumentResults();
-  docRes->results = queryResults;
+  auto docRes = DocumentResults{};
+  free(q_str);
 
   for (auto &w : dedu) {
 
@@ -153,17 +154,16 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
     // Check for hamming distance
 
     // Check for exact match
-    for (auto exactRes : *exact->lookup(w)) {
+    for (auto exactRes : *exact.lookup(w)) {
       if (exactRes->active) {
-        auto iter = queryResults->lookup(exactRes->id);
-        if (iter == queryResults->end()) {
-          auto queryRes = new QueryResult();
-          queryRes->query = exactRes;
-          queryRes->word_found = 1;
-          queryResults->insert(exactRes->id, queryRes);
+        auto iter = docRes.results.lookup(exactRes->id);
+        if (iter == docRes.results.end()) {
+          auto queryRes = QueryResult{};
+          queryRes.query = exactRes;
+          queryRes.word_found = 1;
+          docRes.results.insert(exactRes->id, queryRes);
         } else {
-          auto res = *iter;
-          res->word_found++;
+          iter->word_found++;
         }
       }
     }
@@ -174,10 +174,10 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
 #ifdef DEBUG
-  auto qu = queries;
-  auto ex = exact;
-  auto ed = edit;
-  auto h = hamming;
+  auto &qu = queries;
+  auto &ex = exact;
+  auto &ed = edit_bk_tree();
+  auto h = hamming_bk_trees();
 #endif
   return EC_SUCCESS;
 }
