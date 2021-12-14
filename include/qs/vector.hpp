@@ -45,6 +45,11 @@ public:
         capacity(other.capacity) {
     functions::copy_uninitialized(other.begin(), other.end(), this->begin());
   }
+  vector(const vector &other)
+      : data(new T_storage[other.capacity]), size(other.size),
+        capacity(other.capacity) {
+    functions::copy_uninitialized(other.begin_const(), other.end_const(), this->begin());
+  }
   vector &operator=(vector &other) {
     if (this != &other) {
       T_storage *new_data = new T_storage[other.capacity];
@@ -195,7 +200,9 @@ public:
   };
 
   iterator begin() { return iterator(this->data); }
+  iterator begin_const() const { return iterator(this->data); }
   iterator end() { return iterator(&this->data[this->size]); }
+  iterator end_const() const { return iterator(&this->data[this->size]); }
 
   auto rbegin() { return std::make_reverse_iterator(end()); }
   auto rend() { return std::make_reverse_iterator(begin()); }
