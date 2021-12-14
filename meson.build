@@ -19,7 +19,15 @@ libqs_src = [
 libqs_static = static_library('qs', libqs_src, include_directories : include)
 
 core_src = ['src/core.cpp']
-core_lib = shared_library('core', core_src, include_directories: include, link_with: libqs_static)
+core_lib = shared_library('core', core_src, include_directories: include, link_with: libqs_static, cpp_args : '-DDEBUG')
+
+core_test_sources = ['src/test/test_through.cpp']
+core_test = executable('core_test',
+    sources : core_test_sources,
+    link_with : core_lib,
+    include_directories : include,
+    cpp_args : '-DDEBUG'
+)
 
 # TODO(spyros): Turn this on when needed
 # search_src = [
