@@ -3,6 +3,7 @@
 #include <qs/entry.hpp>
 #include <qs/hash_set.hpp>
 #include <qs/hash_table.hpp>
+#include <qs/memory.hpp>
 #include <qs/parser.hpp>
 #include <qs/vector.hpp>
 
@@ -12,9 +13,14 @@ struct Query {
   MatchType match_type;
   unsigned int match_dist;
   unsigned int word_count;
+
+  Query(QueryID id, bool active, MatchType match_type, unsigned int match_dist,
+        unsigned int word_count)
+      : id(id), active(active), match_type(match_type), match_dist(match_dist),
+        word_count(word_count) {}
 };
 
-static qs::oa_hash_table<QueryID, Query *> queries;
+static qs::oa_hash_table<QueryID, qs::unique_pointer<Query>> queries;
 struct QueryResult {
   Query *query;
   unsigned int word_found;
@@ -26,12 +32,12 @@ struct DocumentResults {
 };
 
 using qvec = qs::vector<Query *>;
-using entry = qs::entry<qvec *>;
+using entry = qs::entry<qvec>;
 
 static qs::oa_hash_table<qs::string, qvec> exact;
 
-static qs::edit_dist<qvec *> edit_functor;
-static qs::hamming_dist<qvec *> hamming_functor;
+static qs::edit_dist<qvec> edit_functor;
+static qs::hamming_dist<qvec> hamming_functor;
 
 static qs::bk_tree<entry> &edit_bk_tree() {
   static qs::bk_tree<entry> edit_bk{&edit_functor};
@@ -67,15 +73,12 @@ static void add_to_tree(Query *q, entry &en, qs::bk_tree<entry> &tree) {
   auto h = hamming_bk_trees();
 #endif
   auto found = tree.find(en);
-  qvec *qv;
   if (found.is_empty()) {
-    qv = new qvec();
-    en.payload = qv;
+    en.payload.push(q);
     tree.insert(en);
   } else {
-    qv = found.get().payload;
+    found.get().payload.push(q);
   }
-  qv->push(q);
 }
 
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
@@ -86,43 +89,39 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   auto &ed = edit_bk_tree();
   auto h = hamming_bk_trees();
 #endif
-  auto q = new Query{
-      query_id, true, match_type, match_dist, 0,
-  };
+  auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist, 0);
   auto unique_words = qs::hash_table<qs::string, entry>();
   char *q_str = strdup(query_str);
-  qs::parse_string(q_str, " ", [q, &unique_words](qs::string &word) {
+  qs::parse_string(q_str, " ", [&q, &unique_words](qs::string &word) {
     q->word_count++;
-    unique_words.insert(word, entry(word, nullptr));
+    unique_words.insert(word, entry(word));
   });
   free(q_str);
 
   if (match_type == MT_EDIT_DIST) {
     for (auto &en : unique_words) {
-      add_to_tree(q, en, edit_bk_tree());
+      add_to_tree(q.get(), en, edit_bk_tree());
     }
   } else if (match_type == MT_HAMMING_DIST) {
     for (auto &en : unique_words) {
-      add_to_tree(q, en,
+      add_to_tree(q.get(), en,
                   hamming_bk_trees()[en.word.length() - MIN_WORD_LENGTH]);
     }
   } else if (match_type == MT_EXACT_MATCH) {
     for (auto &en : unique_words) {
       auto f = exact.lookup(en.word);
-      qvec *qv;
       if (f == exact.end()) {
-        qv = new qvec();
-        exact.insert(en.word, *qv);
+        auto qv = qvec{};
+        qv.push(q.get());
+        exact.insert(en.word, std::move(qv));
       } else {
-        qv = &(*f);
+        f->push(q.get());
       }
-      qv->push(q);
     }
   } else {
-    delete q;
     return EC_FAIL;
   }
-  queries.insert(query_id, q);
+  queries.insert(std::move(query_id), std::move(q));
   return EC_SUCCESS;
 }
 
@@ -154,16 +153,19 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
     // Check for hamming distance
 
     // Check for exact match
-    for (auto exactRes : *exact.lookup(w)) {
-      if (exactRes->active) {
-        auto iter = docRes.results.lookup(exactRes->id);
-        if (iter == docRes.results.end()) {
-          auto queryRes = QueryResult{};
-          queryRes.query = exactRes;
-          queryRes.word_found = 1;
-          docRes.results.insert(exactRes->id, queryRes);
-        } else {
-          iter->word_found++;
+    auto match = exact.lookup(w);
+    if (match != exact.end()) {
+      for (auto exactRes : *match) {
+        if (exactRes->active) {
+          auto iter = docRes.results.lookup(exactRes->id);
+          if (iter == docRes.results.end()) {
+            auto queryRes = QueryResult{};
+            queryRes.query = exactRes;
+            queryRes.word_found = 1;
+            docRes.results.insert(exactRes->id, queryRes);
+          } else {
+            iter->word_found++;
+          }
         }
       }
     }

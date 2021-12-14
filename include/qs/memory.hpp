@@ -48,6 +48,8 @@ public:
     }
   }
 
+  pointer_type get() { return this->operator->(); }
+
   ~unique_pointer() {
     if (data != nullptr) {
       delete data;
