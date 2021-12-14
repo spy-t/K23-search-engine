@@ -48,7 +48,8 @@ public:
   vector(const vector &other)
       : data(new T_storage[other.capacity]), size(other.size),
         capacity(other.capacity) {
-    functions::copy_uninitialized(other.begin_const(), other.end_const(), this->begin());
+    functions::copy_uninitialized(other.begin_const(), other.end_const(),
+                                  this->begin());
   }
   vector &operator=(vector &other) {
     if (this != &other) {

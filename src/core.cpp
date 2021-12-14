@@ -1,10 +1,10 @@
 #include <core.h>
 #include <qs/bk_tree.hpp>
 #include <qs/entry.hpp>
+#include <qs/hash_set.hpp>
 #include <qs/hash_table.hpp>
 #include <qs/parser.hpp>
 #include <qs/vector.hpp>
-#include <qs/hash_set.hpp>
 
 struct Query {
   QueryID id;
@@ -16,13 +16,13 @@ struct Query {
 
 qs::oa_hash_table<QueryID, Query *> *queries;
 struct QueryResult {
-  Query* query;
+  Query *query;
   unsigned int word_found;
 };
 
 struct DocumentResults {
   DocID docId;
-  qs::hash_table<QueryID , QueryResult *>* results;
+  qs::hash_table<QueryID, QueryResult *> *results;
 };
 
 using qvec = qs::vector<Query *>;
@@ -36,7 +36,7 @@ qs::edit_dist<qvec *> *edit_functor;
 qs::hamming_dist<qvec *> *hamming_functor;
 
 // Always the last is the results of the active doc
-qs::vector<DocumentResults *> * results;
+qs::vector<DocumentResults *> *results;
 ErrorCode InitializeIndex() {
   queries = new qs::oa_hash_table<QueryID, Query *>();
   exact = new qs::oa_hash_table<qs::string, qvec>();
@@ -97,11 +97,11 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   free(q_str);
 
   if (match_type == MT_EDIT_DIST) {
-    for (auto & en : unique_words) {
+    for (auto &en : unique_words) {
       add_to_tree(q, en, *edit);
     }
   } else if (match_type == MT_HAMMING_DIST) {
-    for (auto & en: unique_words) {
+    for (auto &en : unique_words) {
       add_to_tree(q, en, hamming[en.word.length() - MIN_WORD_LENGTH]);
     }
   } else if (match_type == MT_EXACT_MATCH) {
@@ -142,28 +142,26 @@ ErrorCode EndQuery(QueryID query_id) {
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   char *q_str = strdup(doc_str);
   qs::hash_set<qs::string> dedu;
-  qs::parse_string(q_str, " ", [&](qs::string &word) {
-    dedu.insert(word);
-  });
+  qs::parse_string(q_str, " ", [&](qs::string &word) { dedu.insert(word); });
   auto queryResults = new qs::hash_table<QueryID, QueryResult *>();
   auto docRes = new DocumentResults();
   docRes->results = queryResults;
 
   for (auto &w : dedu) {
 
-    //Check for edit distance
-    //Check for hamming distance
+    // Check for edit distance
+    // Check for hamming distance
 
     // Check for exact match
     for (auto exactRes : *exact->lookup(w)) {
-      if (exactRes->active){
+      if (exactRes->active) {
         auto iter = queryResults->lookup(exactRes->id);
-        if (iter == queryResults->end()){
+        if (iter == queryResults->end()) {
           auto queryRes = new QueryResult();
           queryRes->query = exactRes;
           queryRes->word_found = 1;
-          queryResults->insert(exactRes->id,queryRes);
-        }else{
+          queryResults->insert(exactRes->id, queryRes);
+        } else {
           auto res = *iter;
           res->word_found++;
         }
