@@ -24,7 +24,6 @@ cd build && ninja
 - Test
 ```bash
 cd build && meson test <test_name> # η meson test αν θέλουμε να τρέξουν όλα τα test 
-                                   # (note το end_to_end_tests θα κανει fail γιατι χρειάζεται arguments)
 ```
 
 - Leak checks με το AddressSanitizer
@@ -95,35 +94,3 @@ C++ στυλ με RAII, templates, iterators και exceptions για error hand
 Επιλέξαμε να αναπαραστήσουμε το matrix που χρησιμοποιεί ο αλγόριθμος σε έναν μονοδιάστατο πίνακα ελαχιστοποιώντας τα allocations και 
 εκμεταλλεύοντας το cache locality που μας παρέχει.
 
-### Testing
-
-Για τα τεστ χρησιμοποιήσαμε το catch2 το οποίο μας ανάγκασε στο `query_test` να
-χρησιμοποιήσουμε το `std::string` του STL. Επειδή είναι σε τεστ κώδικα δεν
-θεωρήσαμε οτι υπάρχει πρόβλημα με αυτό.
-
-#### End to end test
-
-Το `query_test` είναι ένα τεστ το οποίο εξετάζει ολιστικά τα ζητούμενα της
-εργασίας
-
-Το `query_test` χρειάζεται μια προεργασία για να τρέξει. Αρχικά πρέπει να
-υπάρχει κάποιο input το οποίο θα χρησιμοποιήσει το test. Για αρχή κάνοντας `cd src/test/resources`
-τρέχουμε `tar xvzf data_set.tar.gz` το οποίο έχει 2 αρχεία το `query_list` και
-το `word_list`. Με την προϋπόθεση οτι υπάρχει `python3` τρέχουμε 
-`python3 process.py word_list` και `python3 process.py query_list` αντίστοιχα
-για να παράγουμε αρχεία τα οποία έχουν λέξεις ίδιου μήκους για ελέγχους με το 
-hamming distance.
-
-Έχοντας τα προαπαιτούμενα μετά μπορούμε απο το `build` directory να τρέξουμε πχ
-(αυτό το τεστ ενδεχομένως να πάρει αρκετή ώρα γιατί το word file έχει μέγεθος
-1.3 MB. Αν παίρνει υπερβολικά πολύ ώρα για να είναι χρήσιμο τότε μπορείτε να το
-τρέξετε με κάποιο συνδυασμό απο τα files που έχουν παραχθεί για το hamming
-distance test)
-`./end_to_end_tests --queries path/to/query_list --words path/to/word_list --threshold 3 --distance edit`
-
-**ΠΡΟΣΟΧΗ**: αν δεν μπει το `threshold` flag τότε το τεστ θα κάνει pass
-κατευθείαν.
-
-Παράδειγμα με hamming distance
-
-`./end_to_end_tests --queries path/to/3-query_list --words path/to/3-word_list --threshold 3 --distance hamming`
