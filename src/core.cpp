@@ -4,6 +4,7 @@
 #include <qs/hash_table.hpp>
 #include <qs/parser.hpp>
 #include <qs/vector.hpp>
+#include <qs/hash_set.hpp>
 
 struct Query {
   QueryID id;
@@ -13,19 +14,34 @@ struct Query {
   unsigned int word_count;
 };
 
+struct QueryResult {
+  Query* query;
+  unsigned int word_found;
+};
+
+struct DocumentResults {
+  DocID docId;
+  qs::hash_table<QueryID , QueryResult *>* results;
+};
+
+
 qs::hash_table<QueryID, Query *> *queries;
 
 using entry = qs::entry<qs::vector<Query *> *>;
 
 qs::hash_table<qs::string, qs::vector<Query *>> *exact;
+
 qs::bk_tree<entry> *edit;
 qs::bk_tree<entry> hamming[MAX_WORD_LENGTH - MIN_WORD_LENGTH];
 
 qs::edit_dist<qs::vector<Query *> *> *edit_functor;
 qs::hamming_dist<qs::vector<Query *> *> *hamming_functor;
 
+// Always the last is the results of the active doc
+qs::vector<DocumentResults *> * results;
 ErrorCode InitializeIndex() {
   queries = new qs::hash_table<QueryID, Query *>();
+  results = new qs::vector<DocumentResults *>();
   exact = new qs::hash_table<qs::string, qs::vector<Query *>>();
   edit_functor = new qs::edit_dist<qs::vector<Query *> *>();
   hamming_functor = new qs::hamming_dist<qs::vector<Query *> *>();
@@ -118,16 +134,34 @@ ErrorCode EndQuery(QueryID query_id) {
 }
 
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
-  for (auto &q : *queries) {
-    auto query = *q;
-    if (!query.active)
-      continue;
-    switch (query.match_type) {
-    case MT_EXACT_MATCH:
-    case MT_EDIT_DIST:
-    case MT_HAMMING_DIST:
-    default:
-      return EC_FAIL;
+  char *q_str = strdup(doc_str);
+  qs::hash_set<qs::string> dedu;
+  qs::parse_string(q_str, " ", [&](qs::string &word) {
+    dedu.insert(word);
+  });
+  auto queryResults = new qs::hash_table<QueryID, QueryResult *>();
+  auto docRes = new DocumentResults();
+  docRes->results = queryResults;
+
+  for (auto &w : dedu) {
+
+    //Check for edit distance
+    //Check for hamming distance
+
+    // Check for exact match
+    for (auto exactRes : *exact->lookup(w)) {
+      if (exactRes->active){
+        auto iter = queryResults->lookup(exactRes->id);
+        if (iter == queryResults->end()){
+          auto queryRes = new QueryResult();
+          queryRes->query = exactRes;
+          queryRes->word_found = 1;
+          queryResults->insert(exactRes->id,queryRes);
+        }else{
+          auto res = *iter;
+          res->word_found++;
+        }
+      }
     }
   }
   return EC_SUCCESS;
@@ -137,3 +171,4 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
   return EC_SUCCESS;
 }
+9
