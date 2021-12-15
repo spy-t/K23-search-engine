@@ -18,21 +18,45 @@ template <typename T> struct entry {
       : word(std::move(w)), payload(std::move(payload)) {}
 };
 
-template <typename T> class edit_dist : public distance_func<entry<T>> {
+template <typename T> class edit_dist : public distance_func<entry<T>, qs::string> {
   int operator()(const entry<T> &a, const entry<T> &b) const override {
     return edit_distance(a.word, b.word);
   }
   int operator()(const entry<T> &a, const entry<T> &b, int max) const override {
     return edit_distance(a.word, b.word, max);
   }
+  int operator()(const qs::string &a, const entry<T> &b) const override {
+    return edit_distance(a, b.word);
+  }
+  int operator()(const qs::string &a, const entry<T> &b, int max) const override {
+    return edit_distance(a, b.word, max);
+  }
+  int operator()(const entry<T> &a, const qs::string &b) const override {
+    return edit_distance(a.word, b);
+  }
+  int operator()(const entry<T> &a, const qs::string &b, int max) const override {
+    return edit_distance(a.word, b, max);
+  }
 };
 
-template <typename T> struct hamming_dist : public distance_func<entry<T>> {
+template <typename T> struct hamming_dist : public distance_func<entry<T>, qs::string> {
   int operator()(const entry<T> &a, const entry<T> &b) const override {
     return hamming_distance(a.word, b.word);
   }
   int operator()(const entry<T> &a, const entry<T> &b, int max) const override {
     return hamming_distance(a.word, b.word, max);
+  }
+  int operator()(const qs::string &a, const entry<T> &b) const override {
+    return hamming_distance(a, b.word);
+  }
+  int operator()(const qs::string &a, const entry<T> &b, int max) const override {
+    return hamming_distance(a, b.word, max);
+  }
+  int operator()(const entry<T> &a, const qs::string &b) const override {
+    return hamming_distance(a.word, b);
+  }
+  int operator()(const entry<T> &a, const qs::string &b, int max) const override {
+    return hamming_distance(a.word, b, max);
   }
 };
 
