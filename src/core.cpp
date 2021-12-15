@@ -28,7 +28,7 @@ struct QueryResult {
 
 struct DocumentResults {
   DocID docId;
-  qs::hash_table<QueryID, QueryResult> results;
+  qs::hash_table<QueryID, QueryResult> results{};
 };
 
 struct DistanceThresholdCounters {
@@ -65,7 +65,7 @@ static qs::bk_tree<entry, qs::string> *hamming_bk_trees() {
 
 // Always the last is the results of the active doc
 static qs::vector<DocumentResults *> results;
-static qs::oa_hash_table<unsigned int, DistanceThresholdCounters>
+static qs::hash_table<unsigned int, DistanceThresholdCounters>
     thresholdCounters;
 ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
@@ -140,7 +140,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   } else {
     return EC_FAIL;
   }
-  queries.insert(query_id, q);
+  queries.insert(std::move(query_id), std::move(q));
   return EC_SUCCESS;
 }
 
