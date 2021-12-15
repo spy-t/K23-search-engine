@@ -25,11 +25,11 @@ void check_children(qs::bk_tree_node<qs::string> *node, const char *strings[],
 }
 
 struct hamming : public qs::distance_func<qs::string> {
-  int operator()(const qs::string &a, const qs::string &b) const override {
+  int operator()(const qs::string &a, const qs::string &b) const {
     return qs::hamming_distance(a, b);
   }
   int operator()(const qs::string &a, const qs::string &b,
-                 int max) const override {
+                 int max) const {
     return qs::hamming_distance(a, b, max);
   }
 };

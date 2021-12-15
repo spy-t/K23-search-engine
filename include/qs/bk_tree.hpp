@@ -15,14 +15,11 @@ namespace qs {
 template <typename T, typename Q = T> struct distance_func {
   virtual ~distance_func() = default;
   virtual int operator()(const T &a, const T &b) const = 0;
-  virtual int operator()(const T &a, const T &b, int max) const = 0;
-  virtual int operator()(const Q &a, const T &b) const = 0;
-  virtual int operator()(const Q &a, const T &b, int max) const = 0;
-  virtual int operator()(const T &a, const Q &b) const = 0;
   virtual int operator()(const T &a, const Q &b, int max) const = 0;
 };
 
 template <typename T, typename Q> class bk_tree;
+template <typename T, typename Q> class bk_tree_node;
 
 template <typename T, typename Q = T> class bk_tree_node {
   friend class bk_tree<T, Q>;
@@ -53,16 +50,16 @@ template <typename T, typename Q = T> class bk_tree_node {
   }
 
   void add_child(T child_data, const distance_func<T, Q> &dist_func) {
-    auto new_child = new bk_tree_node<T>(child_data);
+    auto new_child = new bk_tree_node<T, Q>(child_data);
     this->add_child(new_child, dist_func);
   }
 
-  void match(const distance_func<T, Q> &dist_func, int threshold, Q query,
+  void match(const distance_func<T, Q> &df, int threshold, Q query,
              int parent_to_query, qs::linked_list<T> &result) {
     int lower_bound = parent_to_query - threshold;
     int upper_bound = parent_to_query + threshold;
     for (auto i = this->children.begin(); i != this->children.end(); i++) {
-      int dist = dist_func((*i)->data, query, upper_bound);
+      int dist = df((*i)->data, query, upper_bound);
       if (dist <= threshold) {
         result.append((*i)->data);
       }
@@ -70,7 +67,7 @@ template <typename T, typename Q = T> class bk_tree_node {
       if ((*i)->distance_from_parent < lower_bound) {
         continue;
       } else if ((*i)->distance_from_parent <= upper_bound) {
-        (*i)->match(dist_func, threshold, query, dist, result);
+        (*i)->match(df, threshold, query, dist, result);
       } else {
         break;
       }
@@ -136,7 +133,7 @@ public:
     if (D <= threshold) {
       ret.append(this->root->data);
     }
-    this->root->match(*d, threshold, query, D, ret);
+    this->root->match((*d), threshold, query, D, ret);
     return ret;
   }
 
