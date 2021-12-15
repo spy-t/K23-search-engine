@@ -133,7 +133,7 @@ public:
     delete[] values;
   }
 
-  void insert(K &&key, V &&value) {
+  iterator insert(K &&key, V &&value) {
     maybe_resize();
     auto pos = find_available_position(key);
     assert(pos >= 0 && pos < capacity);
@@ -143,10 +143,13 @@ public:
       new (&values[pos]) V(std::move(value));
       keys[pos].is_gravestone = false;
       size++;
+      return iterator(pos, *this);
+    } else {
+      return end();
     }
   };
 
-  void insert(const K &key, const V &value) {
+  iterator insert(const K &key, const V &value) {
     maybe_resize();
     auto pos = find_available_position(key);
     assert(pos >= 0 && pos < capacity);
@@ -156,6 +159,9 @@ public:
       new (&values[pos]) V(value);
       keys[pos].is_gravestone = false;
       size++;
+      return iterator(pos, *this);
+    } else {
+      end();
     }
   };
 

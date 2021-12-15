@@ -10,8 +10,14 @@ template <class K, class Hash = std::hash<K>> class hash_set {
   hash_table<K, char> table;
 
 public:
-  void insert(const K &key) { this->table.insert(key, '\0'); }
-  void insert(K &&key) { this->table.insert(std::move(key), '\0'); }
+  struct iterator;
+
+  iterator insert(const K &key) {
+    return iterator(this->table.insert(key, '\0'));
+  }
+  iterator insert(K &&key) {
+    return iterator(this->table.insert(std::move(key), '\0'));
+  }
 
   void remove(const K &key) { this->table.remove(key); }
 
