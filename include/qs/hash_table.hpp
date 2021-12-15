@@ -19,8 +19,8 @@
 namespace qs {
 
 constexpr static int n_primes = 26;
-static int get_prime(int index) {
-  static const int primes[n_primes] = {
+static size_t get_prime(size_t index) {
+  static const size_t primes[n_primes] = {
       53,        97,        193,       389,       769,       1543,     3079,
       6151,      12289,     24593,     49157,     98317,     196613,   393241,
       786433,    1572869,   3145739,   6291469,   12582917,  25165843, 50331653,
@@ -28,9 +28,9 @@ static int get_prime(int index) {
   return primes[index];
 }
 
-QS_FORCE_INLINE int find_prime(int n) {
-  int res = n;
-  for (int i = 0; i < n_primes; ++i) {
+QS_FORCE_INLINE size_t find_prime(size_t n) {
+  size_t res = n;
+  for (size_t i = 0; i < n_primes; ++i) {
     if (res < get_prime(i)) {
       return get_prime(i);
     }
@@ -51,8 +51,8 @@ class hash_table {
     bool is_gravestone = true;
 
     key_pair() : is_gravestone(true){};
-    key_pair(K &key) : key(key), is_gravestone(false){};
-    key_pair(K &&key) : key(std::move(key)), is_gravestone(false){};
+    explicit key_pair(K &key) : key(key), is_gravestone(false){};
+    explicit key_pair(K &&key) : key(std::move(key)), is_gravestone(false){};
 
     const K &get_key() const {
       return *std::launder(reinterpret_cast<const K *>(&key));
@@ -66,7 +66,7 @@ class hash_table {
   key_pair *keys;
   ValueStorage *values;
 
-  int find_available_position(const K &key) {
+  size_t find_available_position(const K &key) {
     std::size_t index = hash_functor(key) % capacity;
     std::size_t i = index;
     while (!this->keys[i].is_gravestone) {
@@ -115,7 +115,7 @@ public:
   explicit hash_table() : hash_table(10){};
 
   explicit hash_table(std::size_t capacity)
-      : size(0), capacity(find_prime(capacity)),
+      : size(0), capacity(find_prime((int)capacity)),
         keys(new key_pair[this->capacity]),
         values(new ValueStorage[this->capacity]) {}
 
@@ -165,7 +165,7 @@ public:
     }
   };
 
-  std::size_t get_size() const { return this->size; }
+  [[nodiscard]] std::size_t get_size() const { return this->size; }
 
   iterator lookup(const K &key) {
     auto pos = find_available_position(key);
