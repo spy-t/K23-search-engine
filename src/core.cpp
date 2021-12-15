@@ -209,26 +209,3 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
   return EC_SUCCESS;
 }
 
-/*
- *
- *
- *
- *
- * for w :doc;
- *    for query: queries: *
- *      match threshold 1
- *
- *      match thres
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- *
- * */
