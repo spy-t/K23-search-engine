@@ -31,6 +31,10 @@ struct DocumentResults {
   qs::hash_table<QueryID, QueryResult> results;
 };
 
+struct DistanceThresholdCounters {
+  int hamming;
+  int edit;
+};
 using qvec = qs::vector<Query *>;
 using entry = qs::entry<qvec>;
 
@@ -61,6 +65,8 @@ static qs::bk_tree<entry> *hamming_bk_trees() {
 
 // Always the last is the results of the active doc
 static qs::vector<DocumentResults *> results;
+static qs::oa_hash_table<unsigned int, DistanceThresholdCounters>
+    thresholdCounters;
 ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
 ErrorCode DestroyIndex() { return EC_SUCCESS; }
@@ -102,10 +108,22 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
     for (auto &en : unique_words) {
       add_to_tree(q.get(), en, edit_bk_tree());
     }
+    auto iter = thresholdCounters.lookup(q->match_dist);
+    if (iter == thresholdCounters.end()) {
+      thresholdCounters.insert(q->match_dist, DistanceThresholdCounters{0, 1});
+    } else {
+      iter->edit++;
+    }
   } else if (match_type == MT_HAMMING_DIST) {
     for (auto &en : unique_words) {
       add_to_tree(q.get(), en,
                   hamming_bk_trees()[en.word.length() - MIN_WORD_LENGTH]);
+    }
+    auto iter = thresholdCounters.lookup(q->match_dist);
+    if (iter == thresholdCounters.end()) {
+      thresholdCounters.insert(q->match_dist, DistanceThresholdCounters{1, 0});
+    } else {
+      iter->hamming++;
     }
   } else if (match_type == MT_EXACT_MATCH) {
     for (auto &en : unique_words) {
@@ -136,7 +154,14 @@ ErrorCode EndQuery(QueryID query_id) {
   if (i == queries.end()) {
     return EC_FAIL;
   }
-  (*i)->active = false;
+  auto q = (*i);
+  auto tC = thresholdCounters.lookup(q->match_dist);
+  if (q->match_type == MT_EDIT_DIST) {
+    tC->edit--;
+  } else if (q->match_type == MT_HAMMING_DIST) {
+    tC->hamming--;
+  }
+  q->active = false;
   return EC_SUCCESS;
 }
 
@@ -148,7 +173,7 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   free(q_str);
 
   for (auto &w : dedu) {
-
+    // we need max 3 loops for edit as many as the unique thresholds
     // Check for edit distance
     // Check for hamming distance
 
@@ -183,3 +208,27 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
 #endif
   return EC_SUCCESS;
 }
+
+/*
+ *
+ *
+ *
+ *
+ * for w :doc;
+ *    for query: queries: *
+ *      match threshold 1
+ *
+ *      match thres
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ * */
