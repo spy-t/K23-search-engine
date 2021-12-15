@@ -65,10 +65,3 @@ unit_tests = executable('unit_tests',
 )
 
 test('unit_tests', unit_tests)
-
-hash_table_benchmark = executable('hash_table_benchmark',
-  sources : ['src/test/hash_table_benchmark.cpp'],
-  link_with : libqs_static,
-  include_directories : include,
-  cpp_args : '-DDEBUG'
-)

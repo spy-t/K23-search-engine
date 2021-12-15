@@ -37,7 +37,7 @@ public:
 
   public:
     reference operator*() { return *this->operator->(); }
-    pointer operator->() { return &iter.current->get().get_key(); }
+    pointer operator->() { return &iter.key(); }
 
     iterator &operator++() {
       ++iter;

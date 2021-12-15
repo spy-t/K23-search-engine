@@ -20,7 +20,7 @@ struct Query {
         word_count(word_count) {}
 };
 
-static qs::oa_hash_table<QueryID, qs::unique_pointer<Query>> queries;
+static qs::hash_table<QueryID, qs::unique_pointer<Query>> queries;
 struct QueryResult {
   Query *query;
   unsigned int word_found;
@@ -38,7 +38,7 @@ struct DistanceThresholdCounters {
 using qvec = qs::vector<Query *>;
 using entry = qs::entry<qvec>;
 
-static qs::oa_hash_table<qs::string, qvec> exact;
+static qs::hash_table<qs::string, qvec> exact;
 
 static qs::edit_dist<qvec> edit_functor;
 static qs::hamming_dist<qvec> hamming_functor;
