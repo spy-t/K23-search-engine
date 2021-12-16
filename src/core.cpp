@@ -99,9 +99,9 @@ static void match_queries(qs::bk_tree<entry, qs::string> &index,
     if (d != 0) {
       auto matchedWords = index.match(iter.key(), w);
       for (auto &mw : matchedWords) {
-        for (auto &mq : mw.payload) {
+        for (auto &mq : mw->payload) {
           if (mq->active) {
-            add_query_to_doc_results(docRes.results, mq, mw.word);
+            add_query_to_doc_results(docRes.results, mq, mw->word);
           }
         }
       }
@@ -117,7 +117,7 @@ static void add_to_tree(Query *q, const qs::string &str,
     en.payload.push(q);
     tree.insert(en);
   } else {
-    found.get().payload.push(q);
+    found.get()->payload.push(q);
   }
 }
 
@@ -220,8 +220,19 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   return EC_SUCCESS;
 }
 
+int comp(const void * a,const void *b){
+
+  return *(QueryID*)a>*(QueryID*)b ;
+}
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
+
+  for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
+       ++iter) {
+    std::cout<<iter.key()<<"\n";
+    std::cout<< iter.value().edit << "\n";
+    std::cout<< iter.value().hamming << "\n";
+  }
   auto &docRes = results[results.get_size() - 1];
   *p_doc_id = docRes.docId;
   qs::vector<QueryID> res;
@@ -239,5 +250,6 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
       (*p_query_ids)[i++] = qRes.query->id;
     }
   }
+  qsort(*p_query_ids,counter,sizeof(QueryID),&comp);
   return EC_SUCCESS;
 }

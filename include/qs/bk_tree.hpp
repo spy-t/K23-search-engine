@@ -55,13 +55,13 @@ template <typename T, typename Q = T> class bk_tree_node {
   }
 
   void match(const distance_func<T, Q> &df, int threshold, Q query,
-             int parent_to_query, qs::linked_list<T> &result) {
+             int parent_to_query, qs::linked_list<T *> &result) {
     int lower_bound = parent_to_query - threshold;
     int upper_bound = parent_to_query + threshold;
     for (auto i = this->children.begin(); i != this->children.end(); i++) {
       int dist = df((*i)->data, query, upper_bound);
       if (dist <= threshold) {
-        result.append((*i)->data);
+        result.append(&(*i)->data);
       }
 
       if ((*i)->distance_from_parent < lower_bound) {
@@ -124,25 +124,25 @@ public:
     }
   }
 
-  qs::linked_list<T> match(int threshold, Q query) const {
+  qs::linked_list<T*> match(int threshold, Q query) const {
     if (this->root == nullptr) {
-      return qs::linked_list<T>();
+      return qs::linked_list<T *>();
     }
-    auto ret = qs::linked_list<T>();
+    auto ret = qs::linked_list<T *>();
     int D = (*d)(query, this->root->data);
     if (D <= threshold) {
-      ret.append(this->root->data);
+      ret.append(&this->root->data);
     }
     this->root->match((*d), threshold, query, D, ret);
     return ret;
   }
 
-  qs::optional<T> find(Q what) const {
+  qs::optional<T *> find(Q what) const {
     auto res = this->match(0, what);
     if (res.get_size() != 1) {
-      return qs::optional<T>();
+      return qs::optional<T *>();
     } else {
-      return qs::optional<T>(res.head->get());
+      return qs::optional<T *>(res.head->get());
     }
   }
 
