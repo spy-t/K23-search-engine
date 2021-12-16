@@ -122,6 +122,32 @@ public:
   hash_table(const hash_table &other) = delete;
   hash_table &operator=(const hash_table &other) = delete;
 
+  hash_table(const hash_table &&other) {
+    this->size = other.size;
+    this->capacity = other.capacity;
+    this->keys = other.keys;
+    this->values = other.values;
+
+    other.size = 0;
+    other.capacity = 0;
+    other.keys = nullptr;
+    other.values = nullptr;
+  }
+
+  hash_table &operator=(const hash_table &&other) {
+    this->size = other.size;
+    this->capacity = other.capacity;
+    this->keys = other.keys;
+    this->values = other.values;
+
+    other.size = 0;
+    other.capacity = 0;
+    other.keys = nullptr;
+    other.values = nullptr;
+
+    return *this;
+  }
+
   ~hash_table() {
     for (std::size_t i = 0; i < capacity; ++i) {
       if (!keys[i].is_gravestone) {
@@ -129,8 +155,14 @@ public:
         std::launder(reinterpret_cast<V *>(&values[i]))->~V();
       }
     }
-    delete[] keys;
-    delete[] values;
+
+    if (keys != nullptr) {
+      delete[] keys;
+    }
+
+    if (values != nullptr) {
+      delete[] values;
+    }
   }
 
   iterator insert(K &&key, V &&value) {
