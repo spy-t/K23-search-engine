@@ -122,7 +122,7 @@ public:
   hash_table(const hash_table &other) = delete;
   hash_table &operator=(const hash_table &other) = delete;
 
-  hash_table(const hash_table &&other) {
+  hash_table(hash_table &&other) {
     this->size = other.size;
     this->capacity = other.capacity;
     this->keys = other.keys;
@@ -134,7 +134,7 @@ public:
     other.values = nullptr;
   }
 
-  hash_table &operator=(const hash_table &&other) {
+  hash_table &operator=(hash_table &&other) {
     this->size = other.size;
     this->capacity = other.capacity;
     this->keys = other.keys;
@@ -168,6 +168,7 @@ public:
   iterator insert(K &&key, V &&value) {
     maybe_resize();
     auto pos = find_available_position(key);
+    std::cout<< pos <<"\n";
     assert(pos >= 0 && pos < capacity);
 
     if (this->keys[pos].is_gravestone) {
