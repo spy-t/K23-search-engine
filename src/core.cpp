@@ -71,6 +71,33 @@ ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
 ErrorCode DestroyIndex() { return EC_SUCCESS; }
 
+static void add_query_to_doc_results(qs::hash_table<QueryID, QueryResult> &resultsTable,Query * q){
+  auto iter = resultsTable.lookup(q->id);
+  if (iter == resultsTable.end()) {
+    auto queryRes = QueryResult{};
+    queryRes.query = q;
+    queryRes.word_found = 1;
+    resultsTable.insert(q->id, queryRes);
+  } else {
+    iter->word_found++;
+  }
+}
+
+static void match_queries( qs::bk_tree<entry, qs::string> & index, const qs::string & w, DocumentResults & docRes){
+  for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end(); ++iter) {
+    if (iter->hamming != 0){
+      auto matchedWords = index.match(iter.key(),w);
+      for (auto& mw: matchedWords) {
+        for (auto& mq: mw.payload) {
+          if (mq->active) {
+            add_query_to_doc_results(docRes.results,mq);
+          }
+        }
+      }
+    }
+  }
+}
+
 static void add_to_tree(Query *q, const qs::string &str, qs::bk_tree<entry, qs::string> &tree) {
 #ifdef DEBUG
   auto &qu = queries;
@@ -182,22 +209,20 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   for (auto &w : dedu) {
     // we need max 3 loops for edit as many as the unique thresholds
     // Check for edit distance
+    auto&& edit = edit_bk_tree();
+    match_queries(edit,w,docRes);
+
     // Check for hamming distance
+    auto hams = hamming_bk_trees();
+    auto&& ham = hams[w.length()-MIN_WORD_LENGTH];
+    match_queries(ham,w,docRes);
 
     // Check for exact match
     auto match = exact.lookup(w);
     if (match != exact.end()) {
       for (auto exactRes : *match) {
         if (exactRes->active) {
-          auto iter = docRes.results.lookup(exactRes->id);
-          if (iter == docRes.results.end()) {
-            auto queryRes = QueryResult{};
-            queryRes.query = exactRes;
-            queryRes.word_found = 1;
-            docRes.results.insert(exactRes->id, queryRes);
-          } else {
-            iter->word_found++;
-          }
+          add_query_to_doc_results(docRes.results,exactRes);
         }
       }
     }
