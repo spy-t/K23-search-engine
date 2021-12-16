@@ -64,7 +64,7 @@ static qs::bk_tree<entry, qs::string> *hamming_bk_trees() {
 }
 
 // Always the last is the results of the active doc
-static qs::vector<DocumentResults *> results;
+static qs::vector<DocumentResults> results;
 static qs::hash_table<unsigned int, DistanceThresholdCounters>
     thresholdCounters;
 ErrorCode InitializeIndex() { return EC_SUCCESS; }
@@ -99,12 +99,6 @@ static void match_queries( qs::bk_tree<entry, qs::string> & index, const qs::str
 }
 
 static void add_to_tree(Query *q, const qs::string &str, qs::bk_tree<entry, qs::string> &tree) {
-#ifdef DEBUG
-  auto &qu = queries;
-  auto &ex = exact;
-  auto &ed = edit_bk_tree();
-  auto &&h = hamming_bk_trees();
-#endif
   auto found = tree.find(str);
   if (found.is_empty()) {
     auto en = entry(str);
@@ -117,12 +111,6 @@ static void add_to_tree(Query *q, const qs::string &str, qs::bk_tree<entry, qs::
 
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
-#ifdef DEBUG
-  auto &qu = queries;
-  auto &ex = exact;
-  auto &ed = edit_bk_tree();
-  auto &&h = hamming_bk_trees();
-#endif
   auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist, 0);
   auto unique_words = qs::hash_set<qs::string>();
   char *q_str = strdup(query_str);
@@ -172,12 +160,6 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
 }
 
 ErrorCode EndQuery(QueryID query_id) {
-#ifdef DEBUG
-  auto &qu = queries;
-  auto &ex = exact;
-  auto &ed = edit_bk_tree();
-  auto &&h = hamming_bk_trees();
-#endif
   auto i = queries.lookup(query_id);
   if (i == queries.end()) {
     return EC_FAIL;
@@ -194,20 +176,13 @@ ErrorCode EndQuery(QueryID query_id) {
 }
 
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
-#ifdef DEBUG
-  auto &qu = queries;
-  auto &ex = exact;
-  auto &ed = edit_bk_tree();
-  auto &&h = hamming_bk_trees();
-#endif
   char *q_str = strdup(doc_str);
   qs::hash_set<qs::string> dedu;
   qs::parse_string(q_str, " ", [&](qs::string &word) { dedu.insert(word); });
   auto docRes = DocumentResults{};
+  docRes.docId = doc_id;
   free(q_str);
-
   for (auto &w : dedu) {
-    // we need max 3 loops for edit as many as the unique thresholds
     // Check for edit distance
     auto&& edit = edit_bk_tree();
     match_queries(edit,w,docRes);
@@ -227,17 +202,29 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
       }
     }
   }
+  results.push(std::move(docRes));
   return EC_SUCCESS;
 }
 
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
-#ifdef DEBUG
-  auto &qu = queries;
-  auto &ex = exact;
-  auto &ed = edit_bk_tree();
-  auto &&h = hamming_bk_trees();
-#endif
+  auto& docRes = results[results.get_size()-1];
+  *p_doc_id = docRes.docId;
+  qs::vector<QueryID> res;
+  int counter = 0;
+  for (auto& qRes: docRes.results){
+      if (qRes.word_found == qRes.query->word_count){
+        counter++;
+      }
+  }
+  *p_num_res = counter;
+  *p_query_ids = new QueryID[counter];
+  int i = 0;
+  for (auto& qRes: docRes.results){
+    if (qRes.word_found == qRes.query->word_count){
+      *p_query_ids[i++] = qRes.query->id;
+    }
+  }
   return EC_SUCCESS;
 }
 
