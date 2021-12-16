@@ -127,8 +127,10 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   auto unique_words = qs::hash_set<qs::string>();
   char *q_str = strdup(query_str);
   qs::parse_string(q_str, " ", [&q, &unique_words](qs::string &word) {
-    q->word_count++;
-    unique_words.insert(word);
+    auto&& place = unique_words.insert(word);
+    if (place != unique_words.end()) {
+      q->word_count++;
+    }
   });
   free(q_str);
 
