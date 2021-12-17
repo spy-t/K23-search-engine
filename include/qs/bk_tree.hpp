@@ -124,7 +124,7 @@ public:
     }
   }
 
-  qs::linked_list<T*> match(int threshold, Q query) const {
+  qs::linked_list<T *> match(int threshold, Q query) const {
     if (this->root == nullptr) {
       return qs::linked_list<T *>();
     }

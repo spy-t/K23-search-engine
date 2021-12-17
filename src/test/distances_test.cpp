@@ -12,7 +12,8 @@ TEST_CASE("Hamming distance", "[distances]") {
         qs::hamming_distance(qs::string("when"), qs::string("whenever")));
   }
   SECTION("'suasa' and 'alana'") {
-    REQUIRE(qs::hamming_distance(qs::string("suasa"), qs::string("alana")) == 3);
+    REQUIRE(qs::hamming_distance(qs::string("suasa"), qs::string("alana")) ==
+            3);
   }
 }
 
@@ -40,5 +41,4 @@ TEST_CASE("Edit distance", "[distances]") {
   SECTION("'ahem' and 'mahemn'") {
     REQUIRE(qs::edit_distance(qs::string("ahem"), qs::string("mahemn")) == 2);
   }
-
 }

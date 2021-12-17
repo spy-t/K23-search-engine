@@ -127,7 +127,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   auto unique_words = qs::hash_set<qs::string>();
   char *q_str = strdup(query_str);
   qs::parse_string(q_str, " ", [&q, &unique_words](qs::string &word) {
-    auto&& place = unique_words.insert(word);
+    auto &&place = unique_words.insert(word);
     if (place != unique_words.end()) {
       q->word_count++;
     }
@@ -220,23 +220,13 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   return EC_SUCCESS;
 }
 
-int comp(const void * a,const void *b){
-
-  return *(QueryID*)a>*(QueryID*)b ;
-}
+int comp(const void *a, const void *b) { return *(QueryID *)a > *(QueryID *)b; }
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
-
-  for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
-       ++iter) {
-    std::cout<<iter.key()<<"\n";
-    std::cout<< iter.value().edit << "\n";
-    std::cout<< iter.value().hamming << "\n";
-  }
   auto &docRes = results[results.get_size() - 1];
   *p_doc_id = docRes.docId;
   qs::vector<QueryID> res;
- int counter = 0;
+  int counter = 0;
   for (auto &qRes : docRes.results) {
     if (qRes.matched_words.get_size() == qRes.query->word_count) {
       counter++;
@@ -250,6 +240,6 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
       (*p_query_ids)[i++] = qRes.query->id;
     }
   }
-  qsort(*p_query_ids,counter,sizeof(QueryID),&comp);
+  qsort(*p_query_ids, counter, sizeof(QueryID), &comp);
   return EC_SUCCESS;
 }

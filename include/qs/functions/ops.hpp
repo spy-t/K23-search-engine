@@ -71,7 +71,8 @@ template <class I, class T> inline I find(I start, I end, const T &t) {
   return end;
 }
 
-template <class I, class P> QS_FORCE_INLINE I find_if(I start, I end, P predicate) {
+template <class I, class P>
+QS_FORCE_INLINE I find_if(I start, I end, P predicate) {
   while (start != end) {
     if (predicate(*start)) {
       return start;

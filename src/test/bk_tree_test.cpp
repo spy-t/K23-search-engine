@@ -28,8 +28,7 @@ struct hamming : public qs::distance_func<qs::string> {
   int operator()(const qs::string &a, const qs::string &b) const {
     return qs::hamming_distance(a, b);
   }
-  int operator()(const qs::string &a, const qs::string &b,
-                 int max) const {
+  int operator()(const qs::string &a, const qs::string &b, int max) const {
     return qs::hamming_distance(a, b, max);
   }
 };
@@ -95,10 +94,12 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
       THEN("'hell' and 'help' are found") {
         auto words = tree.match(2, qs::string("henn"));
         REQUIRE(words.get_size() == 2);
-        auto hell =
-            qs::functions::find_if(words.begin(), words.end(), [&](const qs::string *s) { return *s == qs::string("hell"); });
-        auto help =
-            qs::functions::find_if(words.begin(), words.end(), [&](const qs::string *s){ return *s == qs::string("help"); });
+        auto hell = qs::functions::find_if(
+            words.begin(), words.end(),
+            [&](const qs::string *s) { return *s == qs::string("hell"); });
+        auto help = qs::functions::find_if(
+            words.begin(), words.end(),
+            [&](const qs::string *s) { return *s == qs::string("help"); });
         REQUIRE((hell != words.end() && help != words.end()));
       }
     }
@@ -169,8 +170,9 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
       THEN("'helper' is found") {
         auto words = tree.match(0, qs::string("helper"));
         REQUIRE(words.get_size() == 1);
-        auto helper = qs::functions::find_if(words.begin(), words.end(),
-                                          [&](const qs::string *s) { return *s == qs::string("helper"); });
+        auto helper = qs::functions::find_if(
+            words.begin(), words.end(),
+            [&](const qs::string *s) { return *s == qs::string("helper"); });
         REQUIRE(helper != words.end());
       }
     }
@@ -179,10 +181,12 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
       THEN("'loop' and 'troop' are found") {
         auto words = tree.match(3, qs::string("poor"));
         REQUIRE(words.get_size() == 2);
-        auto loop =
-            qs::functions::find_if(words.begin(), words.end(), [&](const qs::string *s) { return *s == qs::string("loop"); });
-        auto troop = qs::functions::find_if(words.begin(), words.end(),
-                                         [&](const qs::string *s){ return *s == qs::string("troop"); });
+        auto loop = qs::functions::find_if(
+            words.begin(), words.end(),
+            [&](const qs::string *s) { return *s == qs::string("loop"); });
+        auto troop = qs::functions::find_if(
+            words.begin(), words.end(),
+            [&](const qs::string *s) { return *s == qs::string("troop"); });
         REQUIRE((loop != words.end() && troop != words.end()));
       }
     }
@@ -191,8 +195,9 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
       THEN("'helped' is found") {
         auto words = tree.match(0, qs::string("helped"));
         REQUIRE(words.get_size() == 1);
-        auto helped = qs::functions::find_if(words.begin(), words.end(),
-                                          [&](const qs::string *s){ return *s == qs::string("helped");});
+        auto helped = qs::functions::find_if(
+            words.begin(), words.end(),
+            [&](const qs::string *s) { return *s == qs::string("helped"); });
         REQUIRE(helped != words.end());
       }
     }
