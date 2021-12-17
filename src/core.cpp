@@ -100,7 +100,7 @@ static void match_queries(qs::bk_tree<entry, qs::string> &index,
       auto matchedWords = index.match(iter.key(), w);
       for (auto &mw : matchedWords) {
         for (auto &mq : mw->payload) {
-          if (mq->active) {
+          if (mq->active && iter.key() == mq->match_dist) {
             add_query_to_doc_results(docRes.results, mq, mw->word);
           }
         }
@@ -220,10 +220,14 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   return EC_SUCCESS;
 }
 
+static int last_result = 0;
 int comp(const void *a, const void *b) { return *(QueryID *)a > *(QueryID *)b; }
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
-  auto &docRes = results[results.get_size() - 1];
+  if (last_result + 1 > results.get_size()) {
+    return EC_FAIL;
+  }
+  auto &docRes = results[last_result++];
   *p_doc_id = docRes.docId;
   qs::vector<QueryID> res;
   int counter = 0;
