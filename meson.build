@@ -6,6 +6,10 @@ project('search', 'cpp',
 	]
 )
 
+if get_option('buildtype').startswith('debug')
+  add_project_arguments('-DQS_DEBUG', language: ['cpp'])
+endif
+
 include = include_directories('include')
 
 libqs_src = [
@@ -25,7 +29,6 @@ core_test = executable('core_test',
     ],
     link_with : libqs_static,
     include_directories : include,
-    cpp_args : '-DDEBUG'
 )
 
 # TODO(spyros): Turn this on when needed

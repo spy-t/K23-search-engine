@@ -1,6 +1,7 @@
 #ifndef QS_HASH_TABLE_HPP
 #define QS_HASH_TABLE_HPP
 
+#include "qs/memory.hpp"
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
@@ -234,6 +235,21 @@ public:
     }
   }
 
+  struct entry {
+    K *key;
+    V *value;
+  };
+
+  entry *entries() {
+    auto e = new entry[this->size];
+    std::size_t i = 0;
+    for (iterator iter = begin(); iter != end(); ++iter) {
+      e[i++] = entry{&iter.key(), &iter.value()};
+    }
+
+    return e;
+  }
+
   struct iterator {
     using iterator_category = std::forward_iterator_tag;
     using difference_type = std::ptrdiff_t;
@@ -280,7 +296,7 @@ public:
       return !(a == b);
     }
 
-    QS_FORCE_INLINE const K &key() {
+    QS_FORCE_INLINE K &key() {
       return *std::launder(reinterpret_cast<K *>(&keys[pos].key));
     }
 
