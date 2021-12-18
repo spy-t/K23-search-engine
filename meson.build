@@ -17,7 +17,8 @@ libqs_src = [
 	'src/lib/distances.cpp',
 	'src/lib/hash.cpp',
 	'src/lib/sstream.cpp',
-	'src/lib/string.cpp'
+	'src/lib/string.cpp',
+	'src/lib/string_view.cpp'
 ]
 
 libqs_static = static_library('qs', libqs_src, include_directories : include)
@@ -58,13 +59,14 @@ unit_test_sources = [
 	'src/test/skip_list_test.cpp',
 	'src/test/ops_test.cpp',
 	'src/test/deduplication_test.cpp',
+	'src/test/string_view_test.cpp'
 ]
 
 unit_tests = executable('unit_tests',
 	sources : unit_test_sources,
 	link_with : libqs_static,
 	include_directories : include,
-	cpp_args: '-DDEBUG'
+	cpp_args: '-DQS_DEBUG'
 )
 
 test('unit_tests', unit_tests)

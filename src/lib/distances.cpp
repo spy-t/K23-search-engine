@@ -1,18 +1,19 @@
 #include <qs/distances.hpp>
 
 #include <qs/core.h>
+#include <qs/string_view.h>
 
 namespace qs {
 
-int hamming_distance(const qs::string &s1, const qs::string &s2, int max) {
-  if (s1.length() != s2.length()) {
+int hamming_distance(qs::string_view &s1, qs::string_view &s2, int max) {
+  if (s1.size() != s2.size()) {
     // TODO(spyros): This should be an assertion. Change this when the assertion
     // system is in place
     throw std::runtime_error("cannot find hamming distance between two strings "
                              "of different lengths");
   }
   int dist = 0;
-  std::size_t len = s1.length();
+  std::size_t len = s1.size();
   auto *c1 = s1.data();
   auto *c2 = s2.data();
   for (std::size_t i = 0; i < len && max >= dist; i++) {
@@ -31,11 +32,11 @@ static QS_FORCE_INLINE void init_edit_buffer(int *buffer, int len) {
 #define EDIT_BUFFER_SIZE 64ul
 #endif
 
-int edit_distance(const qs::string &s1, const qs::string &s2, int max) {
+int edit_distance(qs::string_view &s1, qs::string_view &s2, int max) {
   static int d[EDIT_BUFFER_SIZE];
-  int max_len = (int)s1.length();
+  int max_len = (int)s1.size();
   auto *max_str = s1.data();
-  int min_len = (int)s2.length();
+  int min_len = (int)s2.size();
   auto *min_str = s2.data();
   if (max_len < min_len) {
     functions::swap(max_len, min_len);

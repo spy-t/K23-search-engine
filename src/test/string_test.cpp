@@ -134,6 +134,7 @@ SCENARIO("String comparisons work", "[string]") {
     }
   }
 }
+
 SCENARIO("String sanitize works", "[string]") {
   GIVEN("A simple string") {
     qs::string s("SUPER.D");

@@ -86,7 +86,7 @@ public:
 
   T &get() { return this->data; }
 
-#ifdef DEBUG
+#ifdef QS_DEBUG
   const node_list &get_children() { return this->children; }
 #endif
 };
@@ -146,7 +146,7 @@ public:
     }
   }
 
-#ifdef DEBUG
+#ifdef QS_DEBUG
   bk_tree_node<T, Q> *get_root() const { return this->root; }
 #endif
 };

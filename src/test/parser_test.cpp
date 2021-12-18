@@ -33,7 +33,7 @@ TEST_CASE("Parse string token by token", "[parser]") {
     size_t length = strlen(t);
     char *str = new char[length + 1];
     std::memcpy(str, t, length + 1);
-    qs::parse_string(str, "/", [&](const qs::string &entry) {
+    qs::parse_string(str, '/', [&](qs::string_view &entry) {
       REQUIRE(entry == qs::string("First"));
     });
     delete[] str;
@@ -45,7 +45,7 @@ TEST_CASE("Parse string token by token", "[parser]") {
     char *str = new char[length + 1];
     std::memcpy(str, t, length + 1);
     int index = 1;
-    qs::parse_string(str, "/", [&](const qs::string &entry) {
+    qs::parse_string(str, '/', [&](qs::string_view &entry) {
       REQUIRE(entry == (s + (qs::string(index++))));
     });
     delete[] str;

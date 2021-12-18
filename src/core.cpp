@@ -4,6 +4,7 @@
 #include <qs/hash_set.hpp>
 #include <qs/hash_table.hpp>
 #include <qs/memory.hpp>
+#include <qs/string_view.h>
 #include <qs/parser.hpp>
 #include <qs/vector.hpp>
 
@@ -23,7 +24,7 @@ struct Query {
 static qs::hash_table<QueryID, qs::unique_pointer<Query>> queries;
 struct QueryResult {
   Query *query;
-  qs::hash_set<qs::string> matched_words;
+  qs::hash_set<qs::string_view> matched_words;
 };
 
 struct DocumentResults {
@@ -38,21 +39,21 @@ struct DistanceThresholdCounters {
 using qvec = qs::vector<Query *>;
 using entry = qs::entry<qvec>;
 
-static qs::hash_table<qs::string, qvec> exact;
+static qs::hash_table<qs::string_view, qvec> exact;
 
 static qs::edit_dist<qvec> edit_functor;
 static qs::hamming_dist<qvec> hamming_functor;
 
-static qs::bk_tree<entry, qs::string> &edit_bk_tree() {
-  static qs::bk_tree<entry, qs::string> edit_bk{&edit_functor};
+static qs::bk_tree<entry, qs::string_view> &edit_bk_tree() {
+  static qs::bk_tree<entry, qs::string_view> edit_bk{&edit_functor};
 
   return edit_bk;
 }
 
 constexpr int HAMMING_BK_TREES = MAX_WORD_LENGTH - MIN_WORD_LENGTH;
-static qs::bk_tree<entry, qs::string> *hamming_bk_trees() {
+static qs::bk_tree<entry, qs::string_view> *hamming_bk_trees() {
   static bool is_initialized = false;
-  static qs::bk_tree<entry, qs::string> bk_trees[HAMMING_BK_TREES];
+  static qs::bk_tree<entry, qs::string_view> bk_trees[HAMMING_BK_TREES];
   if (!is_initialized) {
     for (auto &i : bk_trees) {
       i = qs::bk_tree<entry, qs::string>{&hamming_functor};
@@ -73,7 +74,7 @@ ErrorCode DestroyIndex() { return EC_SUCCESS; }
 
 static void
 add_query_to_doc_results(qs::hash_table<QueryID, QueryResult> &resultsTable,
-                         Query *q, const qs::string &word) {
+                         Query *q, qs::string_view &word) {
   auto iter = resultsTable.lookup(q->id);
   if (iter == resultsTable.end()) {
     auto queryRes = QueryResult{};
@@ -85,8 +86,8 @@ add_query_to_doc_results(qs::hash_table<QueryID, QueryResult> &resultsTable,
   }
 }
 
-static void match_queries(qs::bk_tree<entry, qs::string> &index,
-                          const qs::string &w, DocumentResults &docRes,
+static void match_queries(qs::bk_tree<entry, qs::string_view> &index,
+                          qs::string_view &w, DocumentResults &docRes,
                           MatchType match_type) {
   for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
        ++iter) {
@@ -99,7 +100,7 @@ static void match_queries(qs::bk_tree<entry, qs::string> &index,
     if (d != 0) {
       auto matchedWords = index.match(iter.key(), w);
       for (auto &mw : matchedWords) {
-        for (auto &mq : mw->payload) {
+        for (auto mq : mw->payload) {
           if (mq->active && iter.key() == mq->match_dist) {
             add_query_to_doc_results(docRes.results, mq, mw->word);
           }
@@ -109,8 +110,8 @@ static void match_queries(qs::bk_tree<entry, qs::string> &index,
   }
 }
 
-static void add_to_tree(Query *q, const qs::string &str,
-                        qs::bk_tree<entry, qs::string> &tree) {
+static void add_to_tree(Query *q, qs::string_view &str,
+                        qs::bk_tree<entry, qs::string_view> &tree) {
   auto found = tree.find(str);
   if (found.is_empty()) {
     auto en = entry(str);
@@ -124,15 +125,13 @@ static void add_to_tree(Query *q, const qs::string &str,
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
   auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist, 0);
-  auto unique_words = qs::hash_set<qs::string>();
-  char *q_str = strdup(query_str);
-  qs::parse_string(q_str, " ", [&q, &unique_words](qs::string &word) {
+  auto unique_words = qs::hash_set<qs::string_view>();
+  qs::parse_string(query_str, ' ', [&q, &unique_words](qs::string_view &word) {
     auto &&place = unique_words.insert(word);
     if (place != unique_words.end()) {
       q->word_count++;
     }
   });
-  free(q_str);
 
   if (match_type == MT_EDIT_DIST) {
     for (auto &str : unique_words) {
@@ -147,7 +146,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   } else if (match_type == MT_HAMMING_DIST) {
     for (auto &str : unique_words) {
       add_to_tree(q.get(), str,
-                  hamming_bk_trees()[str.length() - MIN_WORD_LENGTH]);
+                  hamming_bk_trees()[str.size() - MIN_WORD_LENGTH]);
     }
     auto iter = thresholdCounters.lookup(q->match_dist);
     if (iter == thresholdCounters.end()) {
@@ -191,8 +190,8 @@ ErrorCode EndQuery(QueryID query_id) {
 
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   char *q_str = strdup(doc_str);
-  qs::hash_set<qs::string> dedu;
-  qs::parse_string(q_str, " ", [&](qs::string &word) { dedu.insert(word); });
+  qs::hash_set<qs::string_view> dedu;
+  qs::parse_string(q_str, ' ', [&](qs::string_view &word) { dedu.insert(word); });
   auto docRes = DocumentResults{};
   docRes.docId = doc_id;
   free(q_str);
@@ -203,7 +202,7 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
 
     // Check for hamming distance
     auto hams = hamming_bk_trees();
-    auto &ham = hams[w.length() - MIN_WORD_LENGTH];
+    auto &ham = hams[w.size() - MIN_WORD_LENGTH];
     match_queries(ham, w, docRes, MT_HAMMING_DIST);
 
     // Check for exact match

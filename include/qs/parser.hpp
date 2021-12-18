@@ -2,6 +2,7 @@
 #define QS_PARSER_HPP
 #include <cstdio>
 #include <qs/string.h>
+#include <qs/string_view.h>
 
 namespace qs {
 template <typename Fn> void parse_file(FILE *stream, char del, Fn f) {
@@ -18,14 +19,19 @@ template <typename Fn> void parse_file(FILE *stream, char del, Fn f) {
   std::free(line);
 }
 
-template <typename Fn> void parse_string(char *stream, const char *del, Fn f) {
-  char *token = nullptr;
-  while ((token = strsep(&stream, del)) != nullptr) {
-    if (*token == '\0')
-      continue;
-    qs::string entry(token);
-    f(entry);
+template <typename Fn>
+void parse_string(const char *stream, const char del, Fn f) {
+  qs::string_view token;
+  qs::string_view stream_view{stream};
+  while ((token = stream_view.split(del)) != qs::string_view::empty) {
+    f(token);
   }
+  /* while ((token = strsep(&stream, del)) != nullptr) { */
+  /*   if (*token == '\0') */
+  /*     continue; */
+  /*   qs::string entry(token); */
+  /*   f(entry); */
+  /* } */
 }
 } // namespace qs
 #endif // QS_PARSER_HPP
