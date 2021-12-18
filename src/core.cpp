@@ -4,8 +4,8 @@
 #include <qs/hash_set.hpp>
 #include <qs/hash_table.hpp>
 #include <qs/memory.hpp>
-#include <qs/string_view.h>
 #include <qs/parser.hpp>
+#include <qs/string_view.h>
 #include <qs/vector.hpp>
 
 struct Query {
@@ -41,22 +41,19 @@ using entry = qs::entry<qvec>;
 
 static qs::hash_table<qs::string_view, qvec> exact;
 
-static qs::edit_dist<qvec> edit_functor;
-static qs::hamming_dist<qvec> hamming_functor;
-
-static qs::bk_tree<entry, qs::string_view> &edit_bk_tree() {
-  static qs::bk_tree<entry, qs::string_view> edit_bk{&edit_functor};
+static qs::bk_tree<entry> &edit_bk_tree() {
+  static qs::bk_tree<entry> edit_bk{&qs::edit_distance};
 
   return edit_bk;
 }
 
 constexpr int HAMMING_BK_TREES = MAX_WORD_LENGTH - MIN_WORD_LENGTH;
-static qs::bk_tree<entry, qs::string_view> *hamming_bk_trees() {
+static qs::bk_tree<entry> *hamming_bk_trees() {
   static bool is_initialized = false;
-  static qs::bk_tree<entry, qs::string_view> bk_trees[HAMMING_BK_TREES];
+  static qs::bk_tree<entry> bk_trees[HAMMING_BK_TREES];
   if (!is_initialized) {
     for (auto &i : bk_trees) {
-      i = qs::bk_tree<entry, qs::string_view>{&hamming_functor};
+      i = qs::bk_tree<entry>{&qs::hamming_distance};
     }
     is_initialized = true;
   }
@@ -86,9 +83,8 @@ add_query_to_doc_results(qs::hash_table<QueryID, QueryResult> &resultsTable,
   }
 }
 
-static void match_queries(qs::bk_tree<entry, qs::string_view> &index,
-                          qs::string_view &w, DocumentResults &docRes,
-                          MatchType match_type) {
+static void match_queries(qs::bk_tree<entry> &index, qs::string_view &w,
+                          DocumentResults &docRes, MatchType match_type) {
   for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
        ++iter) {
     int d = 0;
@@ -111,7 +107,7 @@ static void match_queries(qs::bk_tree<entry, qs::string_view> &index,
 }
 
 static void add_to_tree(Query *q, qs::string_view &str,
-                        qs::bk_tree<entry, qs::string_view> &tree) {
+                        qs::bk_tree<entry> &tree) {
   auto found = tree.find(str);
   if (found.is_empty()) {
     auto en = entry(str);
@@ -190,7 +186,8 @@ ErrorCode EndQuery(QueryID query_id) {
 
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   qs::hash_set<qs::string_view> dedu;
-  qs::parse_string(doc_str, ' ', [&](qs::string_view &word) { dedu.insert(word); });
+  qs::parse_string(doc_str, ' ',
+                   [&](qs::string_view &word) { dedu.insert(word); });
   auto docRes = DocumentResults{};
   docRes.docId = doc_id;
   for (auto &w : dedu) {

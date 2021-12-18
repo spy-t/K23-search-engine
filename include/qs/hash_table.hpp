@@ -5,7 +5,6 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
-#include <cstring>
 #include <functional>
 #include <memory>
 #include <type_traits>
@@ -14,7 +13,6 @@
 #include <qs/core.h>
 #include <qs/hash.h>
 #include <qs/list.hpp>
-#include <qs/string.h>
 #include <qs/vector.hpp>
 
 namespace qs {

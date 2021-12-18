@@ -89,21 +89,15 @@ public:
 
   string_view split(char needle, u32 from = 0);
 
-  QS_FORCE_INLINE const char *data() const {
-    return this->startp;
-  }
+  QS_FORCE_INLINE const char *data() const { return this->startp; }
 
-  QS_FORCE_INLINE const char *begin() const {
-    return this->startp;
-  }
+  QS_FORCE_INLINE const char *begin() const { return this->startp; }
 
-  QS_FORCE_INLINE const char *end() const {
-    return this->endp + 1;
-  }
+  QS_FORCE_INLINE const char *end() const { return this->endp + 1; }
 
-  QS_FORCE_INLINE const char *last() const {
-    return this->endp;
-  }
+  QS_FORCE_INLINE const char *last() const { return this->endp; }
+
+  QS_FORCE_INLINE string_view get_string_view() const { return *this; }
 };
 
 } // namespace qs
