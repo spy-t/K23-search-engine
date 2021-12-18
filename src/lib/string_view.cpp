@@ -27,10 +27,13 @@ string_view string_view::split(char needle, u32 from) {
   while (*ss != needle && ss != endp) {
     ss++;
   }
-  if (ss == endp) {
+  if (ss == endp && *endp != needle) {
     auto ret = string_view{new_start, endp};
     *this = empty;
     return ret;
+  } else if (ss == endp) {
+    *this = empty;
+    return empty;
   } else {
     startp = ss + 1;
   }

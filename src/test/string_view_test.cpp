@@ -16,6 +16,7 @@ TEST_CASE("string_view behaves as expected", "[string_view]") {
   REQUIRE(a == "a");
   REQUIRE(s == "string");
   REQUIRE(s.split(' ') == "string");
+  REQUIRE(s.split(' ') == qs::string_view::empty);
 
   qs::string_view s1{
       "http dbpedia resource sokol airport http dbpedia ontology abstract "
