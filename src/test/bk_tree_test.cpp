@@ -8,20 +8,21 @@
 #include <qs/vector.hpp>
 #include <type_traits>
 
-using sl =
-    qs::skip_list<qs::bk_tree_node<qs::string_view> *, QS_BK_TREE_SKIP_LIST_LEVELS>;
+using sl = qs::skip_list<qs::bk_tree_node<qs::string_view> *,
+                         QS_BK_TREE_SKIP_LIST_LEVELS>;
 
-void check_children(qs::bk_tree_node<qs::string_view> *node, const char *strings[],
-                    int num_children) {
+void check_children(qs::bk_tree_node<qs::string_view> *node,
+                    const char *strings[], int num_children) {
   auto &children = node->get_children();
   int counter = 0;
-  qs::functions::for_each(
-      const_cast<sl &>(children).begin(), const_cast<sl &>(children).end(),
-      [&counter, num_children, strings](qs::bk_tree_node<qs::string_view> *curr) {
-        REQUIRE(counter < num_children);
-        REQUIRE(curr->get() == strings[counter]);
-        counter++;
-      });
+  qs::functions::for_each(const_cast<sl &>(children).begin(),
+                          const_cast<sl &>(children).end(),
+                          [&counter, num_children,
+                           strings](qs::bk_tree_node<qs::string_view> *curr) {
+                            REQUIRE(counter < num_children);
+                            REQUIRE(curr->get() == strings[counter]);
+                            counter++;
+                          });
 }
 
 SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
@@ -73,11 +74,13 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
         auto words = tree.match(2, qs::string_view("henn"));
         REQUIRE(words.get_size() == 2);
         auto hell = qs::functions::find_if(
-            words.begin(), words.end(),
-            [&](const qs::string_view *s) { return *s == qs::string_view("hell"); });
+            words.begin(), words.end(), [&](const qs::string_view *s) {
+              return *s == qs::string_view("hell");
+            });
         auto help = qs::functions::find_if(
-            words.begin(), words.end(),
-            [&](const qs::string_view *s) { return *s == qs::string_view("help"); });
+            words.begin(), words.end(), [&](const qs::string_view *s) {
+              return *s == qs::string_view("help");
+            });
         REQUIRE((hell != words.end() && help != words.end()));
       }
     }
@@ -149,8 +152,9 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
         auto words = tree.match(0, qs::string_view("helper"));
         REQUIRE(words.get_size() == 1);
         auto helper = qs::functions::find_if(
-            words.begin(), words.end(),
-            [&](const qs::string_view *s) { return *s == qs::string_view("helper"); });
+            words.begin(), words.end(), [&](const qs::string_view *s) {
+              return *s == qs::string_view("helper");
+            });
         REQUIRE(helper != words.end());
       }
     }
@@ -160,11 +164,13 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
         auto words = tree.match(3, qs::string_view("poor"));
         REQUIRE(words.get_size() == 2);
         auto loop = qs::functions::find_if(
-            words.begin(), words.end(),
-            [&](const qs::string_view *s) { return *s == qs::string_view("loop"); });
+            words.begin(), words.end(), [&](const qs::string_view *s) {
+              return *s == qs::string_view("loop");
+            });
         auto troop = qs::functions::find_if(
-            words.begin(), words.end(),
-            [&](const qs::string_view *s) { return *s == qs::string_view("troop"); });
+            words.begin(), words.end(), [&](const qs::string_view *s) {
+              return *s == qs::string_view("troop");
+            });
         REQUIRE((loop != words.end() && troop != words.end()));
       }
     }
@@ -174,8 +180,9 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
         auto words = tree.match(0, qs::string_view("helped"));
         REQUIRE(words.get_size() == 1);
         auto helped = qs::functions::find_if(
-            words.begin(), words.end(),
-            [&](const qs::string_view *s) { return *s == qs::string_view("helped"); });
+            words.begin(), words.end(), [&](const qs::string_view *s) {
+              return *s == qs::string_view("helped");
+            });
         REQUIRE(helped != words.end());
       }
     }

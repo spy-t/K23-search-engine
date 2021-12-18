@@ -124,12 +124,13 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist, 0);
   q->query_str = qs::string{query_str};
   auto unique_words = qs::hash_set<qs::string_view>();
-  qs::parse_string(q->query_str.data(), ' ', [&q, &unique_words](qs::string_view &word) {
-    auto &&place = unique_words.insert(word);
-    if (place != unique_words.end()) {
-      q->word_count++;
-    }
-  });
+  qs::parse_string(q->query_str.data(), ' ',
+                   [&q, &unique_words](qs::string_view &word) {
+                     auto &&place = unique_words.insert(word);
+                     if (place != unique_words.end()) {
+                       q->word_count++;
+                     }
+                   });
 
   if (match_type == MT_EDIT_DIST) {
     for (auto &str : unique_words) {
