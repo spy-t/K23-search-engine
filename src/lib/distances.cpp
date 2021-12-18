@@ -5,7 +5,7 @@
 
 namespace qs {
 
-int hamming_distance(qs::string_view &s1, qs::string_view &s2, int max) {
+int hamming_distance(const qs::string_view &s1, const qs::string_view &s2, int max) {
   if (s1.size() != s2.size()) {
     // TODO(spyros): This should be an assertion. Change this when the assertion
     // system is in place
@@ -32,7 +32,7 @@ static QS_FORCE_INLINE void init_edit_buffer(int *buffer, int len) {
 #define EDIT_BUFFER_SIZE 64ul
 #endif
 
-int edit_distance(qs::string_view &s1, qs::string_view &s2, int max) {
+int edit_distance(const qs::string_view &s1, const qs::string_view &s2, int max) {
   static int d[EDIT_BUFFER_SIZE];
   int max_len = (int)s1.size();
   auto *max_str = s1.data();

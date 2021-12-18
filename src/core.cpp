@@ -56,7 +56,7 @@ static qs::bk_tree<entry, qs::string_view> *hamming_bk_trees() {
   static qs::bk_tree<entry, qs::string_view> bk_trees[HAMMING_BK_TREES];
   if (!is_initialized) {
     for (auto &i : bk_trees) {
-      i = qs::bk_tree<entry, qs::string>{&hamming_functor};
+      i = qs::bk_tree<entry, qs::string_view>{&hamming_functor};
     }
     is_initialized = true;
   }
@@ -189,12 +189,10 @@ ErrorCode EndQuery(QueryID query_id) {
 }
 
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
-  char *q_str = strdup(doc_str);
   qs::hash_set<qs::string_view> dedu;
-  qs::parse_string(q_str, ' ', [&](qs::string_view &word) { dedu.insert(word); });
+  qs::parse_string(doc_str, ' ', [&](qs::string_view &word) { dedu.insert(word); });
   auto docRes = DocumentResults{};
   docRes.docId = doc_id;
-  free(q_str);
   for (auto &w : dedu) {
     // Check for edit distance
     auto &edit = edit_bk_tree();
@@ -219,7 +217,7 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   return EC_SUCCESS;
 }
 
-static int last_result = 0;
+static size_t last_result = 0;
 int comp(const void *a, const void *b) { return *(QueryID *)a > *(QueryID *)b; }
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {

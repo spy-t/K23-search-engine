@@ -24,20 +24,20 @@ void check_children(qs::bk_tree_node<qs::string> *node, const char *strings[],
       });
 }
 
-struct hamming : public qs::distance_func<qs::string> {
-  int operator()(const qs::string &a, const qs::string &b) const {
+struct hamming : public qs::distance_func<qs::string_view> {
+  int operator()(const qs::string_view &a, const qs::string_view &b) const {
     return qs::hamming_distance(a, b);
   }
-  int operator()(const qs::string &a, const qs::string &b, int max) const {
+  int operator()(const qs::string_view &a, const qs::string_view &b, int max) const {
     return qs::hamming_distance(a, b, max);
   }
 };
 
-struct edit : public qs::distance_func<qs::string> {
-  int operator()(const qs::string &a, const qs::string &b) const override {
+struct edit : public qs::distance_func<qs::string_view> {
+  int operator()(const qs::string_view &a, const qs::string_view &b) const override {
     return qs::edit_distance(a, b);
   }
-  int operator()(const qs::string &a, const qs::string &b,
+  int operator()(const qs::string_view &a, const qs::string_view &b,
                  int max) const override {
     return qs::edit_distance(a, b, max);
   }
@@ -49,15 +49,15 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
 
   GIVEN("The strings: hell, help, fall, felt, fell, smal, melt and using"
         " hamming distance") {
-    qs::vector<qs::string> word_vec(7);
-    word_vec.push(qs::string("hell"));
-    word_vec.push(qs::string("help"));
-    word_vec.push(qs::string("fall"));
-    word_vec.push(qs::string("felt"));
-    word_vec.push(qs::string("fell"));
-    word_vec.push(qs::string("smal"));
-    word_vec.push(qs::string("melt"));
-    auto tree = qs::bk_tree(word_vec, &ham);
+    qs::vector<qs::string_view> word_vec(7);
+    word_vec.push(qs::string_view("hell"));
+    word_vec.push(qs::string_view("help"));
+    word_vec.push(qs::string_view("fall"));
+    word_vec.push(qs::string_view("felt"));
+    word_vec.push(qs::string_view("fell"));
+    word_vec.push(qs::string_view("smal"));
+    word_vec.push(qs::string_view("melt"));
+    auto tree = qs::bk_tree<qs::string_view>(word_vec, &ham);
 
     THEN("'hell' is the root") {
       auto r = tree.get_root();
@@ -204,7 +204,7 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
   }
 
   GIVEN("No strings") {
-    auto tree = qs::bk_tree<qs::string>(&ham);
+    auto tree = qs::bk_tree<qs::string_view>(&ham);
     REQUIRE(tree.get_root() == nullptr);
     THEN("Matching returns nothing") {
       auto words = tree.match(0, qs::string("str"));

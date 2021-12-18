@@ -210,7 +210,7 @@ public:
       size++;
       return iterator(pos, *this);
     } else {
-      end();
+      return end();
     }
   };
 

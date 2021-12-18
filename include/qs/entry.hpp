@@ -19,20 +19,26 @@ class edit_dist : public distance_func<entry<T>, qs::string_view> {
   int operator()(const entry<T> &a, const entry<T> &b) const override {
     return edit_distance(a.word, b.word);
   }
-  int operator()(const entry<T> &a, qs::string_view &b,
+  int operator()(const entry<T> &a, const qs::string_view &b,
                  int max) const override {
     return edit_distance(a.word, b, max);
+  }
+  int operator()(const entry<T> &a, const qs::string_view &b) const override {
+    return edit_distance(a.word, b);
   }
 };
 
 template <typename T>
-struct hamming_dist : public distance_func<entry<T>, qs::string> {
+struct hamming_dist : public distance_func<entry<T>, qs::string_view> {
   int operator()(const entry<T> &a, const entry<T> &b) const override {
     return hamming_distance(a.word, b.word);
   }
-  int operator()(const entry<T> &a, qs::string_view &b,
+  int operator()(const entry<T> &a, const qs::string_view &b,
                  int max) const override {
     return hamming_distance(a.word, b, max);
+  }
+  int operator()(const entry<T> &a, const qs::string_view &b) const override {
+    return hamming_distance(a.word, b);
   }
 };
 

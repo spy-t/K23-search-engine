@@ -12,9 +12,15 @@
 namespace qs {
 
 #define QS_BK_TREE_SKIP_LIST_LEVELS 16
-template <typename T, typename Q = T> struct distance_func {
+template <typename T, typename Q, std::enable_if_t<std::is_same_v<Q, T>, bool>> struct distance_func {
   virtual ~distance_func() = default;
   virtual int operator()(const T &a, const T &b) const = 0;
+  virtual int operator()(const T &a, const Q &b, int max) const = 0;
+};
+template <typename T, typename Q, std::enable_if_t<!std::is_same_v<Q, T>, bool>> struct distance_func {
+  virtual ~distance_func() = default;
+  virtual int operator()(const T &a, const T &b) const = 0;
+  virtual int operator()(const T &a, const Q &b) const = 0;
   virtual int operator()(const T &a, const Q &b, int max) const = 0;
 };
 
@@ -124,12 +130,12 @@ public:
     }
   }
 
-  qs::linked_list<T *> match(int threshold, Q query) const {
+  qs::linked_list<T *> match(int threshold, const Q query) const {
     if (this->root == nullptr) {
       return qs::linked_list<T *>();
     }
     auto ret = qs::linked_list<T *>();
-    int D = (*d)(query, this->root->data);
+    int D = (*d)(this->root->data, query);
     if (D <= threshold) {
       ret.append(&this->root->data);
     }
@@ -137,7 +143,7 @@ public:
     return ret;
   }
 
-  qs::optional<T *> find(Q what) const {
+  qs::optional<T *> find(const Q what) const {
     auto res = this->match(0, what);
     if (res.get_size() != 1) {
       return qs::optional<T *>();
