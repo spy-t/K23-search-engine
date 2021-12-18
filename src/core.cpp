@@ -14,6 +14,7 @@ struct Query {
   MatchType match_type;
   unsigned int match_dist;
   unsigned int word_count;
+  qs::string query_str;
 
   Query(QueryID id, bool active, MatchType match_type, unsigned int match_dist,
         unsigned int word_count)
@@ -121,8 +122,9 @@ static void add_to_tree(Query *q, qs::string_view &str,
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
   auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist, 0);
+  q->query_str = qs::string{query_str};
   auto unique_words = qs::hash_set<qs::string_view>();
-  qs::parse_string(query_str, ' ', [&q, &unique_words](qs::string_view &word) {
+  qs::parse_string(q->query_str.data(), ' ', [&q, &unique_words](qs::string_view &word) {
     auto &&place = unique_words.insert(word);
     if (place != unique_words.end()) {
       q->word_count++;
@@ -205,7 +207,7 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
     if (match != exact.end()) {
       for (auto exactRes : *match) {
         if (exactRes->active) {
-          add_query_to_doc_results(docRes.results, exactRes, w);
+          add_query_to_doc_results(docRes.results, exactRes, match.key());
         }
       }
     }

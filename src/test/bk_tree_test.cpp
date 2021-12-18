@@ -9,44 +9,22 @@
 #include <type_traits>
 
 using sl =
-    qs::skip_list<qs::bk_tree_node<qs::string> *, QS_BK_TREE_SKIP_LIST_LEVELS>;
+    qs::skip_list<qs::bk_tree_node<qs::string_view> *, QS_BK_TREE_SKIP_LIST_LEVELS>;
 
-void check_children(qs::bk_tree_node<qs::string> *node, const char *strings[],
+void check_children(qs::bk_tree_node<qs::string_view> *node, const char *strings[],
                     int num_children) {
   auto &children = node->get_children();
   int counter = 0;
   qs::functions::for_each(
       const_cast<sl &>(children).begin(), const_cast<sl &>(children).end(),
-      [&counter, num_children, strings](qs::bk_tree_node<qs::string> *curr) {
+      [&counter, num_children, strings](qs::bk_tree_node<qs::string_view> *curr) {
         REQUIRE(counter < num_children);
-        REQUIRE(!std::strcmp(*(curr->get()), strings[counter]));
+        REQUIRE(curr->get() == strings[counter]);
         counter++;
       });
 }
 
-struct hamming : public qs::distance_func<qs::string_view> {
-  int operator()(const qs::string_view &a, const qs::string_view &b) const {
-    return qs::hamming_distance(a, b);
-  }
-  int operator()(const qs::string_view &a, const qs::string_view &b, int max) const {
-    return qs::hamming_distance(a, b, max);
-  }
-};
-
-struct edit : public qs::distance_func<qs::string_view> {
-  int operator()(const qs::string_view &a, const qs::string_view &b) const override {
-    return qs::edit_distance(a, b);
-  }
-  int operator()(const qs::string_view &a, const qs::string_view &b,
-                 int max) const override {
-    return qs::edit_distance(a, b, max);
-  }
-};
-
 SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
-  auto ham = hamming();
-  auto edi = edit();
-
   GIVEN("The strings: hell, help, fall, felt, fell, smal, melt and using"
         " hamming distance") {
     qs::vector<qs::string_view> word_vec(7);
@@ -57,11 +35,11 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
     word_vec.push(qs::string_view("fell"));
     word_vec.push(qs::string_view("smal"));
     word_vec.push(qs::string_view("melt"));
-    auto tree = qs::bk_tree<qs::string_view>(word_vec, &ham);
+    auto tree = qs::bk_tree<qs::string_view>(word_vec, &qs::hamming_distance);
 
     THEN("'hell' is the root") {
       auto r = tree.get_root();
-      REQUIRE(!std::strcmp(*(r->get()), "hell"));
+      REQUIRE(r->get() == "hell");
 
       THEN("'hell' has 3 children: 'help', 'fall' and 'smal'") {
         const char *children_strings[3] = {"help", "fall", "smal"};
@@ -92,23 +70,23 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
 
     WHEN("Looking up words near 'henn' with threshold 2") {
       THEN("'hell' and 'help' are found") {
-        auto words = tree.match(2, qs::string("henn"));
+        auto words = tree.match(2, qs::string_view("henn"));
         REQUIRE(words.get_size() == 2);
         auto hell = qs::functions::find_if(
             words.begin(), words.end(),
-            [&](const qs::string *s) { return *s == qs::string("hell"); });
+            [&](const qs::string_view *s) { return *s == qs::string_view("hell"); });
         auto help = qs::functions::find_if(
             words.begin(), words.end(),
-            [&](const qs::string *s) { return *s == qs::string("help"); });
+            [&](const qs::string_view *s) { return *s == qs::string_view("help"); });
         REQUIRE((hell != words.end() && help != words.end()));
       }
     }
 
     WHEN("Searching for the word 'felt'") {
-      auto res = tree.find(qs::string("felt"));
+      auto res = tree.find(qs::string_view("felt"));
       THEN("'felt' is found") {
         REQUIRE_NOTHROW(res.get());
-        REQUIRE(ham(*res.get(), qs::string("felt")) == 0);
+        REQUIRE(qs::hamming_distance(*res.get(), qs::string_view("felt")) == 0);
       }
     }
   }
@@ -116,21 +94,21 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
   GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop, "
         "helped and "
         "using edit distance") {
-    auto tree = qs::bk_tree<qs::string>(&edi);
-    tree.insert(qs::string("help"));
-    tree.insert(qs::string("hell"));
-    tree.insert(qs::string("hello"));
-    tree.insert(qs::string("loop"));
-    tree.insert(qs::string("helps"));
-    tree.insert(qs::string("shell"));
-    tree.insert(qs::string("helper"));
-    tree.insert(qs::string("cult"));
-    tree.insert(qs::string("troop"));
-    tree.insert(qs::string("helped"));
+    auto tree = qs::bk_tree<qs::string_view>(&qs::edit_distance);
+    tree.insert(qs::string_view("help"));
+    tree.insert(qs::string_view("hell"));
+    tree.insert(qs::string_view("hello"));
+    tree.insert(qs::string_view("loop"));
+    tree.insert(qs::string_view("helps"));
+    tree.insert(qs::string_view("shell"));
+    tree.insert(qs::string_view("helper"));
+    tree.insert(qs::string_view("cult"));
+    tree.insert(qs::string_view("troop"));
+    tree.insert(qs::string_view("helped"));
 
     THEN("'help' is the root") {
       auto r = tree.get_root();
-      REQUIRE(!std::strcmp(*(r->get()), "help"));
+      REQUIRE(r->get() == "help");
 
       THEN("'help' has 4 children: 'hell', 'hello', 'loop' and 'troop'") {
         const char *children_strings[4] = {"hell", "hello", "loop", "troop"};
@@ -168,46 +146,46 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
 
     WHEN("Looking up words near 'helper' with threshold 0") {
       THEN("'helper' is found") {
-        auto words = tree.match(0, qs::string("helper"));
+        auto words = tree.match(0, qs::string_view("helper"));
         REQUIRE(words.get_size() == 1);
         auto helper = qs::functions::find_if(
             words.begin(), words.end(),
-            [&](const qs::string *s) { return *s == qs::string("helper"); });
+            [&](const qs::string_view *s) { return *s == qs::string_view("helper"); });
         REQUIRE(helper != words.end());
       }
     }
 
     WHEN("Looking up words near 'poor' with threshold 3") {
       THEN("'loop' and 'troop' are found") {
-        auto words = tree.match(3, qs::string("poor"));
+        auto words = tree.match(3, qs::string_view("poor"));
         REQUIRE(words.get_size() == 2);
         auto loop = qs::functions::find_if(
             words.begin(), words.end(),
-            [&](const qs::string *s) { return *s == qs::string("loop"); });
+            [&](const qs::string_view *s) { return *s == qs::string_view("loop"); });
         auto troop = qs::functions::find_if(
             words.begin(), words.end(),
-            [&](const qs::string *s) { return *s == qs::string("troop"); });
+            [&](const qs::string_view *s) { return *s == qs::string_view("troop"); });
         REQUIRE((loop != words.end() && troop != words.end()));
       }
     }
 
     WHEN("Looking up words near 'helped' with threshold 0") {
       THEN("'helped' is found") {
-        auto words = tree.match(0, qs::string("helped"));
+        auto words = tree.match(0, qs::string_view("helped"));
         REQUIRE(words.get_size() == 1);
         auto helped = qs::functions::find_if(
             words.begin(), words.end(),
-            [&](const qs::string *s) { return *s == qs::string("helped"); });
+            [&](const qs::string_view *s) { return *s == qs::string_view("helped"); });
         REQUIRE(helped != words.end());
       }
     }
   }
 
   GIVEN("No strings") {
-    auto tree = qs::bk_tree<qs::string_view>(&ham);
+    auto tree = qs::bk_tree<qs::string_view>(&qs::hamming_distance);
     REQUIRE(tree.get_root() == nullptr);
     THEN("Matching returns nothing") {
-      auto words = tree.match(0, qs::string("str"));
+      auto words = tree.match(0, qs::string_view("str"));
       REQUIRE(words.get_size() == 0);
     }
   }

@@ -108,7 +108,7 @@ template <> struct std::hash<qs::string_view> {
     u64 hash = 5381;
     auto str = s.data();
     i32 c;
-    while (str != s.last()) {
+    while (str != s.last() + 1) {
       c = *str++;
       hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
     }
