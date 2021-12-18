@@ -28,8 +28,9 @@ string_view string_view::split(char needle, u32 from) {
     ss++;
   }
   if (ss == endp) {
+    auto ret = string_view{new_start, endp};
     *this = empty;
-    return string_view{new_start, endp};
+    return ret;
   } else {
     startp = ss + 1;
   }
