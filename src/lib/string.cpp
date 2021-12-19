@@ -33,7 +33,7 @@ string::string(const char *source, size_t length) {
 
 string::string(int num) {
   // Use the snprintf hack
-  len = snprintf(0, 0, "%d", num);
+  len = snprintf(nullptr, 0, "%d", num);
 
   str = new char[len + 1];
   snprintf(str, len + 1, "%d", num);
@@ -46,7 +46,7 @@ string::string(const string &other) : str(nullptr), len(other.len) {
   cap = other.len + 1;
 }
 
-string::string(string &&other)
+string::string(string &&other) noexcept
     : str(other.str), cap(other.cap), len(other.len) {
   other.str = nullptr;
   other.len = 0;
@@ -65,9 +65,7 @@ string &string::operator=(const string &other) {
 
 string &string::operator=(string &&other) noexcept {
   if (this != &other) {
-    if (str != nullptr) {
-      delete[] str;
-    }
+    delete[] str;
     this->str = other.str;
     this->len = other.len;
     this->cap = other.cap;
@@ -78,11 +76,7 @@ string &string::operator=(string &&other) noexcept {
   return *this;
 }
 
-string::~string() {
-  if (str != nullptr) {
-    delete[] str;
-  }
-}
+string::~string() { delete[] str; }
 
 string &string::cat(const string &other) {
   auto new_length = this->len + other.len;

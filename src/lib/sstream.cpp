@@ -1,6 +1,5 @@
 #include <iostream>
 #include <qs/sstream.h>
-#include <qs/vector.hpp>
 
 namespace qs {
 
