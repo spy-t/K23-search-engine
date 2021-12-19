@@ -26,12 +26,6 @@ void parse_string(const char *stream, const char del, Fn f) {
   while ((token = stream_view.split(del)) != qs::string_view::empty) {
     f(token);
   }
-  /* while ((token = strsep(&stream, del)) != nullptr) { */
-  /*   if (*token == '\0') */
-  /*     continue; */
-  /*   qs::string entry(token); */
-  /*   f(entry); */
-  /* } */
 }
 } // namespace qs
 #endif // QS_PARSER_HPP

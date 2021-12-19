@@ -36,7 +36,7 @@ template <class T, std::size_t L> class skip_list {
     friend skip_list;
 
   public:
-    skip_list_node(list_node<T> *data)
+    explicit skip_list_node(list_node<T> *data)
         : next(nullptr), prev(nullptr), top(nullptr), bottom(nullptr),
           data_ptr(data) {}
 
@@ -179,7 +179,7 @@ public:
 
   // Copy operations do not preserve the same level structure to save time
   skip_list &operator=(const skip_list &other) {
-    if (*this != other) {
+    if (this != &other) {
       cmp = other.cmp;
       auto iter = other.data_list.head;
       while (iter != nullptr) {

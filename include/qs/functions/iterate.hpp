@@ -1,8 +1,7 @@
 #ifndef QS_ITERATE_HPP
 #define QS_ITERATE_HPP
 
-namespace qs {
-namespace functions {
+namespace qs::functions {
 template <typename Iterator, typename F>
 void for_each(Iterator begin, Iterator end, F fn) {
   for (; begin != end; begin++) {
@@ -10,6 +9,5 @@ void for_each(Iterator begin, Iterator end, F fn) {
   }
 }
 
-} // namespace functions
-} // namespace qs
+} // namespace qs::functions
 #endif // QS_ITERATE_HPP

@@ -6,8 +6,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace qs {
-namespace functions {
+namespace qs::functions {
 
 // Copies from an iterator-like S to an iterator-like D assuming that D is
 // initialized storage using a copy assignment operation
@@ -81,6 +80,5 @@ QS_FORCE_INLINE I find_if(I start, I end, P predicate) {
   }
   return end;
 }
-} // namespace functions
-} // namespace qs
+} // namespace qs::functions
 #endif // QS_OPS_HPP

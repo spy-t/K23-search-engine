@@ -42,7 +42,7 @@ public:
       add_value_in_place(other.value);
     }
   }
-  optional &operator=(optional &other) {
+  optional &operator=(const optional &other) {
     if (other.has_value) {
       add_value_in_place(other.value);
     } else {
@@ -51,13 +51,13 @@ public:
     return *this;
   }
 
-  optional(optional &&other) : optional() {
+  optional(optional &&other) noexcept : optional() {
     if (other.has_value) {
       add_value_in_place(std::move(other.value));
       other.has_value = false;
     }
   }
-  optional &operator=(optional &&other) {
+  optional &operator=(optional &&other) noexcept {
     if (other.has_value) {
       add_value_in_place(std::move(other.value));
       other.has_value = false;

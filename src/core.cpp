@@ -91,11 +91,11 @@ static void match_queries(qs::bk_tree<entry> &index, qs::string_view &w,
     int d = 0;
     if (match_type == MT_EDIT_DIST) {
       d = iter->edit;
-    } else if (match_type == MT_HAMMING_DIST) {
+    } else {
       d = iter->hamming;
     }
     if (d != 0) {
-      auto matchedWords = index.match(iter.key(), w);
+      auto matchedWords = index.match((int)iter.key(), w);
       for (auto &mw : matchedWords) {
         for (auto mq : mw->payload) {
           if (mq->active && iter.key() == mq->match_dist) {

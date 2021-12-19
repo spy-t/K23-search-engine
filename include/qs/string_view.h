@@ -15,7 +15,7 @@ public:
 
   string_view();
   string_view(const char *start, const char *end);
-  string_view(const char *start);
+  explicit string_view(const char *start);
 
   string_view(const string_view &other) = default;
   string_view &operator=(const string_view &other) = default;

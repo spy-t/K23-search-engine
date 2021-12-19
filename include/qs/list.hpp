@@ -34,14 +34,14 @@ public:
   list_node(const list_node &other) = delete;
   list_node &operator=(const list_node &other) = delete;
 
-  list_node(list_node &&other)
+  list_node(list_node &&other) noexcept
       : value(std::move(other.value)), next_node(other.next_node),
         prev_node(other.prev_node) {
     other.next_node = nullptr;
     other.prev_node = nullptr;
   }
 
-  list_node &operator=(list_node &&other) {
+  list_node &operator=(list_node &&other) noexcept {
     this->value = std::move(other.value);
     this->next_node = other.next_node;
     this->prev_node = other.prev_node;
@@ -104,7 +104,7 @@ public:
     }
   }
   linked_list<V> &operator=(const linked_list<V> &other) {
-    if (*this != other) {
+    if (this != &other) {
       this->~linked_list();
       auto iter = head;
       while (iter != nullptr) {
@@ -115,16 +115,14 @@ public:
     return *this;
   }
 
-  linked_list(linked_list<V> &&other) : linked_list() {
-    this->size = other.size;
-    this->head = other.head;
-    this->tail = other.tail;
+  linked_list(linked_list<V> &&other) noexcept
+      : head(other.head), tail(other.tail), size(other.size) {
     other.head = nullptr;
     other.tail = nullptr;
     other.size = 0;
   }
 
-  linked_list<V> &operator=(linked_list<V> &&other) {
+  linked_list<V> &operator=(linked_list<V> &&other) noexcept {
     this->size = other.size;
     this->head = other.head;
     this->tail = other.tail;

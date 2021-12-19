@@ -20,10 +20,10 @@ public:
   unique_pointer(unique_pointer &other) = delete;
   unique_pointer &operator=(unique_pointer &other) = delete;
 
-  unique_pointer(unique_pointer &&other) : data(other.data) {
+  unique_pointer(unique_pointer &&other) noexcept : data(other.data) {
     other.data = nullptr;
   }
-  unique_pointer &operator=(unique_pointer &&other) {
+  unique_pointer &operator=(unique_pointer &&other) noexcept {
     if (this != &other) {
       this->data = other.data;
       other.data = nullptr;
@@ -50,11 +50,7 @@ public:
 
   pointer_type get() { return this->operator->(); }
 
-  ~unique_pointer() {
-    if (data != nullptr) {
-      delete data;
-    }
-  }
+  ~unique_pointer() { delete data; }
 };
 
 template <typename T, class... Args>

@@ -121,19 +121,16 @@ public:
   hash_table(const hash_table &other) = delete;
   hash_table &operator=(const hash_table &other) = delete;
 
-  hash_table(hash_table &&other) {
-    this->size = other.size;
-    this->capacity = other.capacity;
-    this->keys = other.keys;
-    this->values = other.values;
-
+  hash_table(hash_table &&other) noexcept
+      : size(other.size), capacity(other.capacity), keys(other.keys),
+        values(other.values) {
     other.size = 0;
     other.capacity = 0;
     other.keys = nullptr;
     other.values = nullptr;
   }
 
-  hash_table &operator=(hash_table &&other) {
+  hash_table &operator=(hash_table &&other) noexcept {
     this->size = other.size;
     this->capacity = other.capacity;
     this->keys = other.keys;
@@ -154,14 +151,8 @@ public:
         std::launder(reinterpret_cast<V *>(&values[i]))->~V();
       }
     }
-
-    if (keys != nullptr) {
-      delete[] keys;
-    }
-
-    if (values != nullptr) {
-      delete[] values;
-    }
+    delete[] keys;
+    delete[] values;
   }
 
   iterator insert(const K &key, V &&value) {
@@ -233,6 +224,7 @@ public:
     }
   }
 
+#ifdef QS_DEBUG
   struct entry {
     K *key;
     V *value;
@@ -247,6 +239,7 @@ public:
 
     return e;
   }
+#endif
 
   struct iterator {
     using iterator_category = std::forward_iterator_tag;

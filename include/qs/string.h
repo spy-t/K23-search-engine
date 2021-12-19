@@ -33,7 +33,7 @@ public:
   string(const string &other);
   string &operator=(const string &other);
 
-  string(string &&other);
+  string(string &&other) noexcept;
   string &operator=(string &&other) noexcept;
 
   ~string();
@@ -140,8 +140,8 @@ public:
     using reference = value_type &;
 
     explicit iterator(const char *p) : p(p) {}
-    reference operator*() { return *this->p; }
-    pointer operator->() { return this->p; }
+    reference operator*() const { return *this->p; }
+    pointer operator->() const { return this->p; }
 
     iterator operator++() {
       p++;
