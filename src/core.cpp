@@ -234,7 +234,7 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
     }
   }
   *p_num_res = counter;
-  *p_query_ids = new QueryID[counter];
+  *p_query_ids = static_cast<QueryID *>(malloc(sizeof(QueryID) * counter));
   int i = 0;
   for (auto &qRes : docRes.results) {
     if (qRes.matched_words.get_size() == qRes.query->word_count) {
