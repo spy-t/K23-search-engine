@@ -92,6 +92,14 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
         REQUIRE(qs::hamming_distance(*res.get(), qs::string_view("felt")) == 0);
       }
     }
+
+    WHEN("Searching for the word 'nada'") {
+      auto res = tree.find(qs::string_view("nada"));
+      THEN("nothing is found") {
+        REQUIRE_THROWS(res.get());
+        REQUIRE(res.is_empty() == true);
+      }
+    }
   }
 
   GIVEN("The strings: help, hell, hello, loop, helps, shell, helper, troop, "

@@ -56,3 +56,24 @@ TEST_CASE("String view hash works", "[string_view]") {
 
   REQUIRE(std::hash<qs::string_view>{}(sv) == std::hash<qs::string>{}(s));
 }
+
+TEST_CASE("string_view vs string comparison works as expected",
+          "[string_view]") {
+  qs::string_view s1{"str1"};
+  qs::string s2{"str11"};
+  REQUIRE_FALSE(s1 == s2);
+}
+
+TEST_CASE("String view iteration works as expected", "[string_view]") {
+  qs::string_view s{"string"};
+
+  auto begin = s.begin();
+  auto end = s.end();
+
+  REQUIRE(*begin == 's');
+  REQUIRE(*end == 0);
+  begin++;
+  REQUIRE(*begin == 't');
+  end--;
+  REQUIRE(*end == 'g');
+}

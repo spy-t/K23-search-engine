@@ -15,6 +15,7 @@ TEST_CASE("unique pointer works and correctly deallocates memory",
           "[unique_pointer]") {
   qs::unique_pointer<int> intptr = qs::make_unique<int>(5);
   REQUIRE(*intptr == 5);
+  REQUIRE(*intptr.get() == 5);
 
   auto other = std::move(intptr);
 

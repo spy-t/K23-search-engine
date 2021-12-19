@@ -75,4 +75,29 @@ TEST_CASE("open addressing hash table behaves as expected", "[hash_table]") {
     REQUIRE(ht.get_size() == 1);
     REQUIRE(*ht.lookup(key) == 1);
   }
+
+  SECTION("open addressing hash table move constructor", "[hash_table]") {
+    auto ht_copy = qs::hash_table<qs::string, int>(
+        std::move(qs::hash_table<qs::string, int>()));
+  }
+
+  SECTION("open addressing hash table insert same key twice", "[hash_table]") {
+    qs::hash_table<qs::string, int> ht;
+    ht.insert(qs::string("key"), 1);
+
+    WHEN("Using the const lvalue references insert() overload") {
+      const auto k = qs::string("key");
+      const int v = 1;
+      REQUIRE(ht.insert(k, v) == ht.end());
+    }
+
+    WHEN("Using the rvalue references insert() overload") {
+      REQUIRE(ht.insert(qs::string("key"), 1) == ht.end());
+    }
+  }
+
+  SECTION("open addressing hash table insert when capacity is 0") {
+    qs::hash_table<qs::string, int> ht(1);
+    ht.insert(qs::string("key"), 1);
+  }
 }

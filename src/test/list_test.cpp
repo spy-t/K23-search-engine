@@ -75,6 +75,13 @@ TEST_CASE("Linked list behaves as expected", "[list]") {
         REQUIRE(n->get() == 1);
       }
     }
+
+    WHEN("we remove from the end") {
+      auto prev_size = l.size;
+      l.remove(l.tail);
+      REQUIRE(l.size == prev_size - 1);
+      REQUIRE(l.tail->get() == 8);
+    }
   }
 }
 

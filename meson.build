@@ -61,7 +61,8 @@ unit_test_sources = [
 	'src/test/skip_list_test.cpp',
 	'src/test/ops_test.cpp',
 	'src/test/deduplication_test.cpp',
-	'src/test/string_view_test.cpp'
+	'src/test/string_view_test.cpp',
+	'src/test/entry_test.cpp'
 ]
 
 unit_tests = executable('unit_tests',

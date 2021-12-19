@@ -89,6 +89,11 @@ SCENARIO("String indexing works", "[string]") {
     qs::string s((char *)"String 1");
 
     WHEN("It is dereferenced using a valid index with checked dereference") {
+      auto c = s.at(0);
+      THEN("The character matches") { REQUIRE(c == 'S'); }
+    }
+
+    WHEN("It is dereferenced using a valid index with unchecked dereference") {
       auto c = s[0];
 
       THEN("The character matches") { REQUIRE(c == 'S'); }
@@ -162,4 +167,9 @@ SCENARIO("String sanitize works", "[string]") {
       }
     }
   }
+}
+
+SCENARIO("String output works", "[string]") {
+  qs::string s{"String"};
+  REQUIRE_NOTHROW(std::cout << s << "\n");
 }
