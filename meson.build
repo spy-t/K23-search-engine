@@ -23,6 +23,8 @@ libqs_src = [
 
 libqs_static = static_library('qs', libqs_src, include_directories : include)
 
+libcore_shared = shared_library('core', 'src/core.cpp', include_directories: include, link_with: libqs_static)
+
 core_test = executable('core_test',
     sources : [
       'src/test/test_through.cpp',
