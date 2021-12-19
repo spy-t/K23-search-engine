@@ -1,6 +1,9 @@
 # K23 SEARCH
 
-## [ΓΙΑ ΤΟΥΣ ΕΞΕΤΑΣΤΕΣ](./docs/REPORTS.md)
+## ΓΙΑ ΤΟΥΣ ΕΞΕΤΑΣΤΕΣ
+
+- [ΠΑΡΑΔΟΤΕΟ 1](./docs/DELIVERABLE1.md)
+- [ΠΑΡΑΔΟΤΕΟ 2](./docs/DELIVERABLE2.md)
 
 ## Dependencies
 
