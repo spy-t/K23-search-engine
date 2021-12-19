@@ -88,19 +88,15 @@ static void match_queries(qs::bk_tree<entry> &index, qs::string_view &w,
                           DocumentResults &docRes, MatchType match_type) {
   for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
        ++iter) {
-    int d = 0;
-    if (match_type == MT_EDIT_DIST) {
-      d = iter->edit;
-    } else {
-      d = iter->hamming;
+    if ((match_type == MT_EDIT_DIST && iter->edit == 0) ||
+        (match_type == MT_HAMMING_DIST && iter->hamming == 0)) {
+      continue;
     }
-    if (d != 0) {
-      auto matchedWords = index.match((int)iter.key(), w);
-      for (auto &mw : matchedWords) {
-        for (auto mq : mw->payload) {
-          if (mq->active && iter.key() == mq->match_dist) {
-            add_query_to_doc_results(docRes.results, mq, mw->word);
-          }
+    auto matchedWords = index.match((int)iter.key(), w);
+    for (auto &mw : matchedWords) {
+      for (auto mq : mw->payload) {
+        if (mq->active && iter.key() == mq->match_dist) {
+          add_query_to_doc_results(docRes.results, mq, mw->word);
         }
       }
     }
@@ -217,14 +213,14 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   return EC_SUCCESS;
 }
 
-static size_t last_result = 0;
-int comp(const void *a, const void *b) { return *(QueryID *)a > *(QueryID *)b; }
+static size_t next_result = 0;
+static int comp(const void *a, const void *b) { return *(QueryID *)a > *(QueryID *)b; }
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
-  if (last_result + 1 > results.get_size()) {
+  if (next_result + 1 > results.get_size()) {
     return EC_FAIL;
   }
-  auto &docRes = results[last_result++];
+  auto &docRes = results[next_result++];
   *p_doc_id = docRes.docId;
   qs::vector<QueryID> res;
   int counter = 0;
