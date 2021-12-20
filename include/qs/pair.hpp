@@ -10,6 +10,7 @@ template <class V, class Hash = std::hash<V>> struct pair {
   V v1;
   V v2;
   pair(V &v1, V &v2) : v1(v1), v2(v2){};
+  pair(V &&v1, V &&v2) : v1(std::move(v1)), v2(std::move(v2)){};
 };
 
 } // namespace qs
