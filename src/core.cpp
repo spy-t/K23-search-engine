@@ -214,7 +214,9 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
 }
 
 static size_t next_result = 0;
-static int comp(const void *a, const void *b) { return *(QueryID *)a > *(QueryID *)b; }
+static int comp(const void *a, const void *b) {
+  return *(QueryID *)a > *(QueryID *)b;
+}
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
   if (next_result + 1 > results.get_size()) {

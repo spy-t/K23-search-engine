@@ -19,7 +19,7 @@ libqs_src = [
 	'src/lib/sstream.cpp',
 	'src/lib/string.cpp',
 	'src/lib/string_view.cpp'
-]
+	]
 
 libqs_static = static_library('qs', libqs_src, include_directories : include)
 
@@ -62,7 +62,8 @@ unit_test_sources = [
 	'src/test/ops_test.cpp',
 	'src/test/deduplication_test.cpp',
 	'src/test/string_view_test.cpp',
-	'src/test/entry_test.cpp'
+	'src/test/entry_test.cpp',
+	'src/test/pair_test.cpp'
 ]
 
 unit_tests = executable('unit_tests',
