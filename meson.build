@@ -8,6 +8,7 @@ project('search', 'cpp',
 
 if get_option('buildtype').startswith('debug')
   add_project_arguments('-DQS_DEBUG', language: ['cpp'])
+  add_project_arguments('-fkeep-inline-functions', language: ['cpp'])
 endif
 
 include = include_directories('include')
