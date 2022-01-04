@@ -1,16 +1,15 @@
 #ifndef QS_BK_TREE_HPP
 #define QS_BK_TREE_HPP
 
-#include <iostream>
 #include <qs/functions.hpp>
+#include <qs/hash_table.hpp>
 #include <qs/list.hpp>
 #include <qs/optional.hpp>
+#include <qs/pair.hpp>
 #include <qs/search.hpp>
 #include <qs/skip_list.hpp>
 #include <qs/string_view.h>
 #include <qs/vector.hpp>
-#include <qs/pair.hpp>
-#include <qs/hash_table.hpp>
 
 namespace qs {
 
@@ -33,20 +32,21 @@ template <typename T> class bk_tree_node {
   T data;
   int distance_from_parent{};
   node_list children;
-  qs::hash_table<qs::pair<qs::string>,int>* cache;
+  qs::hash_table<qs::pair<qs::string>, int> *cache;
 
   void add_child(node_p new_child, const distance_function &dist_func) {
-    auto string_pair = pair(this->data.get_string_view().copy(),new_child->data.get_string_view().copy());
+    auto string_pair = pair(this->data.get_string_view().copy(),
+                            new_child->data.get_string_view().copy());
     auto iter = cache->lookup(string_pair);
     int n_distance_from_parent;
 
-    if (iter != cache->end()){
+    if (iter != cache->end()) {
       n_distance_from_parent = *iter;
-    } else{
-      n_distance_from_parent = dist_func(
-          this->data.get_string_view(), new_child->data.get_string_view(),
-          std::numeric_limits<int>::max());
-      cache->insert(string_pair,n_distance_from_parent);
+    } else {
+      n_distance_from_parent = dist_func(this->data.get_string_view(),
+                                         new_child->data.get_string_view(),
+                                         std::numeric_limits<int>::max());
+      cache->insert(string_pair, n_distance_from_parent);
     }
     if (this->children.get_size() > 0) {
       new_child->distance_from_parent = n_distance_from_parent;
@@ -63,7 +63,7 @@ template <typename T> class bk_tree_node {
   }
 
   void add_child(T child_data, const distance_function &dist_func) {
-    auto new_child = new bk_tree_node<T>(child_data,cache);
+    auto new_child = new bk_tree_node<T>(child_data, cache);
     this->add_child(new_child, dist_func);
   }
 
@@ -74,14 +74,15 @@ template <typename T> class bk_tree_node {
     int upper_bound = parent_to_query + threshold;
     for (auto i = this->children.begin(); i != this->children.end(); i++) {
       int dist;
-      auto string_pair = pair((*i)->data.get_string_view().copy(),query.get_string_view().copy());
+      auto string_pair = pair((*i)->data.get_string_view().copy(),
+                              query.get_string_view().copy());
       auto iter = cache->lookup(string_pair);
-      if (iter != this->cache->end()){
+      if (iter != this->cache->end()) {
         dist = *iter;
       } else {
         dist = df((*i)->data.get_string_view(), query.get_string_view(),
-               upper_bound);
-        this->cache.insert(string_pair,dist);
+                  upper_bound);
+        this->cache->insert(string_pair, dist);
       }
 
       if (dist <= threshold) {
@@ -99,7 +100,7 @@ template <typename T> class bk_tree_node {
   }
 
 public:
-  explicit bk_tree_node(T d,qs::hash_table<qs::pair<qs::string>,int>* cache)
+  explicit bk_tree_node(T d, qs::hash_table<qs::pair<qs::string>, int> *cache)
       : data(d), distance_from_parent(0),
         children(node_list(bk_tree_node::sl_compare_func)), cache(cache) {}
 
@@ -120,7 +121,7 @@ template <typename T> class bk_tree {
 
   distance_function dist_func;
   node_p root;
-  qs::hash_table<qs::pair<qs::string>,int> cache;
+  qs::hash_table<qs::pair<qs::string>, int> cache;
 
 public:
   friend class bk_tree_node<T>;
@@ -139,31 +140,41 @@ public:
   explicit bk_tree(Iterable &it, distance_function d)
       : bk_tree(it.begin(), it.end(), d) {}
 
+  bk_tree &operator=(bk_tree &&other) noexcept {
+    delete this->root;
+    this->root = std::move(other.root);
+    this->cache = std::move(other.cache);
+    this->dist_func = other.dist_func;
+    return *this;
+  }
+
   ~bk_tree() { delete this->root; }
 
   void insert(T data) {
     if (this->root == nullptr) {
-      this->root = new bk_tree_node<T>(data,&cache);
+      this->root = new bk_tree_node<T>(data, &cache);
     } else {
       this->root->add_child(data, dist_func);
     }
   }
 
   template <typename Q>
-  qs::linked_list<T *> match(int threshold, const Q query) const {
+  qs::linked_list<T *> match(int threshold, const Q query) {
     if (this->root == nullptr) {
       return qs::linked_list<T *>();
     }
     auto ret = qs::linked_list<T *>();
     int D;
-    auto string_pair = pair(this->root->data.get_string_view().copy(),query.get_string_view().copy());
+    auto string_pair = pair(this->root->data.get_string_view().copy(),
+                            query.get_string_view().copy());
     auto iter = cache.lookup(string_pair);
-    if (iter != this->cache.end()){
+    if (iter != this->cache.end()) {
       D = *iter;
     } else {
       D = (*dist_func)(this->root->data.get_string_view(),
-                   query.get_string_view(), std::numeric_limits<int>::max());
-      this->cache.insert(string_pair,D);
+                       query.get_string_view(),
+                       std::numeric_limits<int>::max());
+      this->cache.insert(string_pair, D);
     }
 
     if (D <= threshold) {
@@ -173,7 +184,7 @@ public:
     return ret;
   }
 
-  template <typename Q> qs::optional<T *> find(const Q what) const {
+  template <typename Q> qs::optional<T *> find(const Q what) {
     auto res = this->match(0, what);
     if (res.get_size() != 1) {
       return qs::optional<T *>();
