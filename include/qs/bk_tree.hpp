@@ -5,7 +5,6 @@
 #include <qs/hash_table.hpp>
 #include <qs/list.hpp>
 #include <qs/optional.hpp>
-#include <qs/pair.hpp>
 #include <qs/search.hpp>
 #include <qs/skip_list.hpp>
 #include <qs/string_view.h>
@@ -34,8 +33,6 @@ template <typename T> class bk_tree_node {
   node_list children;
 
   void add_child(node_p new_child, const distance_function &dist_func) {
-    auto string_pair = pair(this->data.get_string_view().copy(),
-                            new_child->data.get_string_view().copy());
     int n_distance_from_parent;
 
     n_distance_from_parent = dist_func(this->data.get_string_view(),
@@ -67,8 +64,6 @@ template <typename T> class bk_tree_node {
     int upper_bound = parent_to_query + threshold;
     for (auto &child : this->children) {
       int dist;
-      auto string_pair = pair(child->data.get_string_view().copy(),
-                              query.get_string_view().copy());
       dist = df(child->data.get_string_view(), query.get_string_view(),
                 upper_bound);
       if (dist <= threshold) {
@@ -149,8 +144,6 @@ public:
     }
     auto ret = qs::linked_list<T *>();
     int D;
-    auto string_pair = pair(this->root->data.get_string_view().copy(),
-                            query.get_string_view().copy());
     D = (*dist_func)(this->root->data.get_string_view(),
                      query.get_string_view(), std::numeric_limits<int>::max());
 
