@@ -32,22 +32,15 @@ template <typename T> class bk_tree_node {
   T data;
   int distance_from_parent{};
   node_list children;
-  qs::hash_table<qs::pair<qs::string>, int> *cache;
 
   void add_child(node_p new_child, const distance_function &dist_func) {
     auto string_pair = pair(this->data.get_string_view().copy(),
                             new_child->data.get_string_view().copy());
-    auto iter = cache->lookup(string_pair);
     int n_distance_from_parent;
 
-    if (iter != cache->end()) {
-      n_distance_from_parent = *iter;
-    } else {
-      n_distance_from_parent = dist_func(this->data.get_string_view(),
-                                         new_child->data.get_string_view(),
-                                         std::numeric_limits<int>::max());
-      cache->insert(string_pair, n_distance_from_parent);
-    }
+    n_distance_from_parent = dist_func(this->data.get_string_view(),
+                                       new_child->data.get_string_view(),
+                                       std::numeric_limits<int>::max());
     if (this->children.get_size() > 0) {
       new_child->distance_from_parent = n_distance_from_parent;
       auto result = this->children.find(new_child);
@@ -63,7 +56,7 @@ template <typename T> class bk_tree_node {
   }
 
   void add_child(T child_data, const distance_function &dist_func) {
-    auto new_child = new bk_tree_node<T>(child_data, cache);
+    auto new_child = new bk_tree_node<T>(child_data);
     this->add_child(new_child, dist_func);
   }
 
@@ -72,27 +65,20 @@ template <typename T> class bk_tree_node {
              int parent_to_query, qs::linked_list<T *> &result) {
     int lower_bound = parent_to_query - threshold;
     int upper_bound = parent_to_query + threshold;
-    for (auto i = this->children.begin(); i != this->children.end(); i++) {
+    for (auto &child : this->children) {
       int dist;
-      auto string_pair = pair((*i)->data.get_string_view().copy(),
+      auto string_pair = pair(child->data.get_string_view().copy(),
                               query.get_string_view().copy());
-      auto iter = cache->lookup(string_pair);
-      if (iter != this->cache->end()) {
-        dist = *iter;
-      } else {
-        dist = df((*i)->data.get_string_view(), query.get_string_view(),
-                  upper_bound);
-        this->cache->insert(string_pair, dist);
-      }
-
+      dist = df(child->data.get_string_view(), query.get_string_view(),
+                upper_bound);
       if (dist <= threshold) {
-        result.append(&(*i)->data);
+        result.append(&child->data);
       }
 
-      if ((*i)->distance_from_parent < lower_bound) {
+      if (child->distance_from_parent < lower_bound) {
         continue;
-      } else if ((*i)->distance_from_parent <= upper_bound) {
-        (*i)->match(df, threshold, query, dist, result);
+      } else if (child->distance_from_parent <= upper_bound) {
+        child->match(df, threshold, query, dist, result);
       } else {
         break;
       }
@@ -100,9 +86,9 @@ template <typename T> class bk_tree_node {
   }
 
 public:
-  explicit bk_tree_node(T d, qs::hash_table<qs::pair<qs::string>, int> *cache)
+  explicit bk_tree_node(T d)
       : data(d), distance_from_parent(0),
-        children(node_list(bk_tree_node::sl_compare_func)), cache(cache) {}
+        children(node_list(bk_tree_node::sl_compare_func)) {}
 
   ~bk_tree_node() {
     functions::for_each(this->children.begin(), this->children.end(),
@@ -121,7 +107,6 @@ template <typename T> class bk_tree {
 
   distance_function dist_func;
   node_p root;
-  qs::hash_table<qs::pair<qs::string>, int> cache;
 
 public:
   friend class bk_tree_node<T>;
@@ -143,7 +128,6 @@ public:
   bk_tree &operator=(bk_tree &&other) noexcept {
     delete this->root;
     this->root = std::move(other.root);
-    this->cache = std::move(other.cache);
     this->dist_func = other.dist_func;
     return *this;
   }
@@ -152,7 +136,7 @@ public:
 
   void insert(T data) {
     if (this->root == nullptr) {
-      this->root = new bk_tree_node<T>(data, &cache);
+      this->root = new bk_tree_node<T>(data);
     } else {
       this->root->add_child(data, dist_func);
     }
@@ -167,15 +151,8 @@ public:
     int D;
     auto string_pair = pair(this->root->data.get_string_view().copy(),
                             query.get_string_view().copy());
-    auto iter = cache.lookup(string_pair);
-    if (iter != this->cache.end()) {
-      D = *iter;
-    } else {
-      D = (*dist_func)(this->root->data.get_string_view(),
-                       query.get_string_view(),
-                       std::numeric_limits<int>::max());
-      this->cache.insert(string_pair, D);
-    }
+    D = (*dist_func)(this->root->data.get_string_view(),
+                     query.get_string_view(), std::numeric_limits<int>::max());
 
     if (D <= threshold) {
       ret.append(&this->root->data);
