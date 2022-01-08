@@ -1,3 +1,4 @@
+#include "include/qs/scheduler.hpp"
 #include <core.h>
 #include <qs/bk_tree.hpp>
 #include <qs/entry.hpp>
@@ -66,6 +67,13 @@ static qs::bk_tree<entry> *hamming_bk_trees() {
 static qs::vector<DocumentResults> results;
 static qs::hash_table<unsigned int, DistanceThresholdCounters>
     thresholdCounters;
+
+static qs::scheduler &job_scheduler() {
+  static qs::scheduler sched{128};
+
+  return sched;
+}
+
 ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
 ErrorCode DestroyIndex() { return EC_SUCCESS; }
