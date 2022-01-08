@@ -13,16 +13,27 @@ endif
 
 include = include_directories('include')
 
+threads_dep = dependency('threads')
+
+###
+# libqs
+###
+
 libqs_src = [
 	'src/lib/bloom.cpp',
 	'src/lib/distances.cpp',
 	'src/lib/hash.cpp',
 	'src/lib/sstream.cpp',
 	'src/lib/string.cpp',
-	'src/lib/string_view.cpp'
+	'src/lib/string_view.cpp',
+	'src/lib/scheduler.cpp'
 	]
 
-libqs_static = static_library('qs', libqs_src, include_directories : include)
+libqs_static = static_library('qs', libqs_src, include_directories : include, dependencies : threads_dep)
+
+##
+# libcore
+##
 
 libcore_shared = shared_library('core', 'src/core.cpp', include_directories: include, link_with: libqs_static)
 
@@ -35,17 +46,9 @@ core_test = executable('core_test',
     include_directories : include,
 )
 
-# TODO(spyros): Turn this on when needed
-# search_src = [
-# 	'src/bin/search.cpp',
-# 	'src/lib/fs.cpp'
-# ]
-
-# executable('search',
-# 	sources : search_src,
-# 	include_directories : include,
-# 	override_options : ['warning_level=3'])
-
+###
+# Unit tests
+###
 unit_test_sources = [
 	'src/test/unit_main.cpp',
 	'src/test/string_test.cpp',
