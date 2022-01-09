@@ -85,6 +85,14 @@ public:
       : data(d), distance_from_parent(0),
         children(node_list(bk_tree_node::sl_compare_func)) {}
 
+  bk_tree_node(bk_tree_node &&other) noexcept {
+    if (this != &other) {
+      functions::for_each(this->children.begin(), this->children.end(),
+                          [](node_p curr) { delete curr; });
+      this->children = other.children;
+    }
+  }
+
   ~bk_tree_node() {
     functions::for_each(this->children.begin(), this->children.end(),
                         [](node_p curr) { delete curr; });
@@ -120,6 +128,12 @@ public:
   explicit bk_tree(Iterable &it, distance_function d)
       : bk_tree(it.begin(), it.end(), d) {}
 
+  bk_tree(bk_tree &&other) noexcept {
+    if (this != &other) {
+      this->root = std::move(other.root);
+      this->dist_func = other.dist_func;
+    }
+  }
   bk_tree &operator=(bk_tree &&other) noexcept {
     delete this->root;
     this->root = std::move(other.root);
