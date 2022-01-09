@@ -16,20 +16,27 @@ void *scheduler::worker(void *args) {
 
   while (true) {
     QS_WORKER_CHECK_ERR(pthread_mutex_lock(&sched->work_mtx))
-    while (sched->stop) {
+    while (!sched->stop && sched->jobs.is_empty()) {
       QS_WORKER_CHECK_ERR(
           pthread_cond_wait(&sched->there_is_work, &sched->work_mtx))
-      break;
     }
-    if (!sched->jobs.is_empty()) {
-      auto j = sched->jobs.pop();
-      j->f(j->args);
-    }
+    auto should_stop = sched->stop;
+    auto has_work = !sched->jobs.is_empty();
+    // pop job out of the job buffer
+    job *j;
+    if (!should_stop && has_work)
+      j = sched->jobs.pop();
+
+    auto more_work = !sched->jobs.is_empty();
     QS_WORKER_CHECK_ERR(pthread_mutex_unlock(&sched->work_mtx))
-    if (sched->stop) {
+    if (should_stop || more_work) {
+      // notify other threads that something must be done
       QS_WORKER_CHECK_ERR(pthread_cond_signal(&sched->there_is_work))
-      break;
+      if (should_stop)
+        break;
     }
+    if (j != nullptr)
+      j->f(j->args);
   }
   return nullptr;
 }
