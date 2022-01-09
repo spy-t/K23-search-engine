@@ -1,13 +1,17 @@
-#include "include/qs/scheduler.hpp"
 #include <core.h>
 #include <qs/bk_tree.hpp>
 #include <qs/entry.hpp>
 #include <qs/hash_set.hpp>
 #include <qs/hash_table.hpp>
+#include <qs/job.hpp>
 #include <qs/memory.hpp>
 #include <qs/parser.hpp>
+#include <qs/scheduler.hpp>
 #include <qs/string_view.h>
+#include <qs/thread_safe_container.hpp>
 #include <qs/vector.hpp>
+
+#define THREADS_COUNT 1
 
 struct Query {
   QueryID id;
@@ -41,26 +45,35 @@ struct DistanceThresholdCounters {
 using qvec = qs::vector<Query *>;
 using entry = qs::entry<qvec>;
 
-static qs::hash_table<qs::string_view, qvec> exact;
+// thread safe hash_table
+using ts_hash_table =
+    qs::thread_safe_container<qs::hash_table<qs::string_view, qvec>>;
 
-static qs::bk_tree<entry> &edit_bk_tree() {
-  static qs::bk_tree<entry> edit_bk{&qs::edit_distance};
+static ts_hash_table &exact() {
+  static ts_hash_table container{qs::hash_table<qs::string_view, qvec>{}};
+  return container;
+}
 
-  return edit_bk;
+// thread safe bk_tree
+using ts_bk_tree = qs::thread_safe_container<qs::bk_tree<entry>>;
+
+static ts_bk_tree &edit_bk_tree() {
+  static ts_bk_tree container{qs::bk_tree<entry>{&qs::edit_distance}};
+  return container;
 }
 
 constexpr int HAMMING_BK_TREES = MAX_WORD_LENGTH - MIN_WORD_LENGTH;
-static qs::bk_tree<entry> *hamming_bk_trees() {
+static ts_bk_tree *hamming_bk_trees() {
   static bool is_initialized = false;
-  static qs::bk_tree<entry> bk_trees[HAMMING_BK_TREES];
+  static ts_bk_tree containers[HAMMING_BK_TREES];
   if (!is_initialized) {
-    for (auto &i : bk_trees) {
-      i = qs::bk_tree<entry>{&qs::hamming_distance};
+    for (auto &i : containers) {
+      i = qs::thread_safe_container<qs::bk_tree<entry>>{
+          qs::bk_tree<entry>{&qs::hamming_distance}};
     }
     is_initialized = true;
   }
-
-  return bk_trees;
+  return containers;
 }
 
 // Always the last is the results of the active doc
@@ -69,7 +82,7 @@ static qs::hash_table<unsigned int, DistanceThresholdCounters>
     thresholdCounters;
 
 static qs::scheduler &job_scheduler() {
-  static qs::scheduler sched{128};
+  static qs::scheduler sched{THREADS_COUNT};
 
   return sched;
 }
@@ -92,7 +105,7 @@ add_query_to_doc_results(qs::hash_table<QueryID, QueryResult> &resultsTable,
   }
 }
 
-static void match_queries(qs::bk_tree<entry> &index, qs::string_view &w,
+static void match_queries(ts_bk_tree &index, qs::string_view &w,
                           DocumentResults &docRes, MatchType match_type) {
   for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
        ++iter) {
@@ -100,7 +113,8 @@ static void match_queries(qs::bk_tree<entry> &index, qs::string_view &w,
         (match_type == MT_HAMMING_DIST && iter->hamming == 0)) {
       continue;
     }
-    auto matchedWords = index.match((int)iter.key(), w);
+    auto t = index.get_data();
+    auto matchedWords = t->match((int)iter.key(), w);
     for (auto &mw : matchedWords) {
       for (auto mq : mw->payload) {
         if (mq->active && iter.key() == mq->match_dist) {
@@ -111,16 +125,69 @@ static void match_queries(qs::bk_tree<entry> &index, qs::string_view &w,
   }
 }
 
-static void add_to_tree(Query *q, qs::string_view &str,
-                        qs::bk_tree<entry> &tree) {
-  auto found = tree.find(str);
+struct add_to_tree_args {
+  Query *q;
+  qs::string_view *str;
+  ts_bk_tree *tree;
+};
+
+static void *add_to_tree(void *args) {
+  auto a = (add_to_tree_args *)args;
+  auto tree = a->tree;
+  auto str = a->str;
+  auto q = a->q;
+
+  std::cout << "Q: " << q->id << " " << q->word_count << " " << q->query_str << "\n";
+  std::cout << "Str: " << str->operator*() << "\n";
+
+  auto t = tree->lock_for_read();
+  if (t == nullptr)
+    return nullptr;
+  auto found = t->find(*str);
+  tree->unlock_for_read();
   if (found.is_empty()) {
-    auto en = entry(str);
+    auto en = entry(*str);
     en.payload.push(q);
-    tree.insert(en);
+    t = tree->lock_for_write();
+    if (t == nullptr)
+      return nullptr;
+    t->insert(en);
+    tree->unlock_for_write();
   } else {
     found.get()->payload.push(q);
   }
+
+  return nullptr;
+}
+
+struct add_to_hash_table_args {
+  Query *q;
+  qs::string_view *str;
+};
+
+static void *add_to_hash_table(void *args) {
+  auto a = (add_to_hash_table_args *)args;
+  auto q = a->q;
+  auto str = a->str;
+
+  auto e = exact().lock_for_read();
+  if (e == nullptr)
+    return nullptr;
+  auto f = e->lookup(*str);
+  exact().unlock_for_read();
+  if (f == e->end()) {
+    auto qv = qvec{};
+    qv.push(q);
+    e = exact().lock_for_write();
+    if (e == nullptr)
+      return nullptr;
+    e->insert(*str, qv);
+    exact().unlock_for_write();
+  } else {
+    f->push(q);
+  }
+
+  return nullptr;
 }
 
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
@@ -137,8 +204,15 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
                    });
 
   if (match_type == MT_EDIT_DIST) {
+    auto args = new add_to_tree_args[unique_words.get_size()];
+    std::size_t i = 0;
     for (auto &str : unique_words) {
-      add_to_tree(q.get(), str, edit_bk_tree());
+      args[i].q = q.get();
+      args[i].str = &str;
+      args[i].tree = &edit_bk_tree();
+      auto j = qs::job{add_to_tree, &args[i]};
+      job_scheduler().submit_job(j);
+      i++;
     }
     auto iter = thresholdCounters.lookup(q->match_dist);
     if (iter == thresholdCounters.end()) {
@@ -146,10 +220,19 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
     } else {
       iter->edit++;
     }
+
+    job_scheduler().wait_all_finish();
+    delete[] args;
   } else if (match_type == MT_HAMMING_DIST) {
+    auto args = new add_to_tree_args[unique_words.get_size()];
+    std::size_t i = 0;
     for (auto &str : unique_words) {
-      add_to_tree(q.get(), str,
-                  hamming_bk_trees()[str.size() - MIN_WORD_LENGTH]);
+      args[i].q = q.get();
+      args[i].str = &str;
+      args[i].tree = &hamming_bk_trees()[str.size() - MIN_WORD_LENGTH];
+      auto j = qs::job{add_to_tree, (void *)&args[i]};
+      job_scheduler().submit_job(j);
+      i++;
     }
     auto iter = thresholdCounters.lookup(q->match_dist);
     if (iter == thresholdCounters.end()) {
@@ -157,17 +240,21 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
     } else {
       iter->hamming++;
     }
+
+    job_scheduler().wait_all_finish();
+    delete[] args;
   } else if (match_type == MT_EXACT_MATCH) {
+    auto args = new add_to_hash_table_args[unique_words.get_size()];
+    std::size_t i = 0;
     for (auto &str : unique_words) {
-      auto f = exact.lookup(str);
-      if (f == exact.end()) {
-        auto qv = qvec{};
-        qv.push(q.get());
-        exact.insert(str, qv);
-      } else {
-        f->push(q.get());
-      }
+      args[i].q = q.get();
+      args[i].str = &str;
+      auto j = qs::job{add_to_hash_table, (void *)&args[i]};
+      job_scheduler().submit_job(j);
+      i++;
     }
+    job_scheduler().wait_all_finish();
+    delete[] args;
   } else {
     return EC_FAIL;
   }
@@ -208,8 +295,9 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
     match_queries(ham, w, docRes, MT_HAMMING_DIST);
 
     // Check for exact match
-    auto match = exact.lookup(w);
-    if (match != exact.end()) {
+    auto e = exact().get_data();
+    auto match = e->lookup(w);
+    if (match != e->end()) {
       for (auto exactRes : *match) {
         if (exactRes->active) {
           add_query_to_doc_results(docRes.results, exactRes, match.key());
