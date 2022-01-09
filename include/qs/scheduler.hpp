@@ -16,12 +16,16 @@ private:
   concurrent_cyclic_buffer<job> jobs;
   qs::vector<pthread_t> thread_pool;
   static worket_t worker;
+  pthread_mutex_t working_mtx = PTHREAD_MUTEX_INITIALIZER;
+  std::size_t working = 0;
+  pthread_cond_t job_done = PTHREAD_COND_INITIALIZER;
 
 public:
   scheduler() = delete;
   explicit scheduler(std::size_t threads_count);
   ~scheduler();
-  void submit_job(job &j);
+  int submit_job(job &j);
+  int wait_all_finish();
 };
 
 } // namespace qs

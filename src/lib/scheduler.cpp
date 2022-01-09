@@ -5,19 +5,13 @@
 
 namespace qs {
 
-#define QS_WORKER_CHECK_ERR(err)                                               \
-  if (err) {                                                                   \
-    auto ret = new int(err);                                                   \
-    return ret;                                                                \
-  }
-
 void *scheduler::worker(void *args) {
   auto sched = reinterpret_cast<qs::scheduler *>(args);
 
   while (true) {
-    QS_WORKER_CHECK_ERR(pthread_mutex_lock(&sched->work_mtx))
+    QS_RETURN_POINTER_IF_ERR(pthread_mutex_lock(&sched->work_mtx))
     while (!sched->stop && sched->jobs.is_empty()) {
-      QS_WORKER_CHECK_ERR(
+      QS_RETURN_POINTER_IF_ERR(
           pthread_cond_wait(&sched->there_is_work, &sched->work_mtx))
     }
     auto should_stop = sched->stop;
@@ -28,20 +22,29 @@ void *scheduler::worker(void *args) {
       j = sched->jobs.pop();
 
     auto more_work = !sched->jobs.is_empty();
-    QS_WORKER_CHECK_ERR(pthread_mutex_unlock(&sched->work_mtx))
+    QS_RETURN_POINTER_IF_ERR(pthread_mutex_unlock(&sched->work_mtx))
     if (should_stop || more_work) {
       // notify other threads that something must be done
-      QS_WORKER_CHECK_ERR(pthread_cond_signal(&sched->there_is_work))
+      QS_RETURN_POINTER_IF_ERR(pthread_cond_signal(&sched->there_is_work))
       if (should_stop)
         break;
     }
-    if (j != nullptr)
+    if (j != nullptr) {
+      QS_RETURN_POINTER_IF_ERR(pthread_mutex_lock(&sched->working_mtx))
+      sched->working++;
+      QS_RETURN_POINTER_IF_ERR(pthread_mutex_unlock(&sched->working_mtx))
       j->f(j->args);
+      QS_RETURN_POINTER_IF_ERR(pthread_mutex_lock(&sched->working_mtx))
+      sched->working--;
+      QS_RETURN_POINTER_IF_ERR(pthread_mutex_unlock(&sched->working_mtx))
+      pthread_cond_signal(&sched->job_done);
+    }
   }
   return nullptr;
 }
 
-scheduler::scheduler(std::size_t threads_count) : jobs(256), thread_pool(32) {
+scheduler::scheduler(std::size_t threads_count)
+    : jobs(256), thread_pool(threads_count) {
   for (std::size_t i = 0; i < threads_count; i++) {
     this->thread_pool.push(pthread_t{});
     int err =
@@ -55,25 +58,37 @@ scheduler::scheduler(std::size_t threads_count) : jobs(256), thread_pool(32) {
 scheduler::~scheduler() {
   this->stop = true;
   pthread_cond_signal(&there_is_work);
-  int err;
   int thread_err = 0;
   for (auto &thread : this->thread_pool) {
-    if ((err = pthread_join(thread, (void **)&thread_err))) {
-      std::fprintf(stderr, "Pthread join: error: '%s'\n", std::strerror(err));
-    } else if (thread_err) {
+    QS_TRACE_ERR(pthread_join(thread, (void **)&thread_err))
+    if (thread_err) {
       std::fprintf(stderr, "A thread returned with error: (errno - %d): '%s'\n",
                    thread_err, std::strerror(thread_err));
     }
     thread_err = 0;
   }
+  QS_TRACE_ERR(pthread_mutex_destroy(&this->work_mtx))
+  QS_TRACE_ERR(pthread_cond_destroy(&this->there_is_work))
+  QS_TRACE_ERR(pthread_mutex_destroy(&this->working_mtx))
+  QS_TRACE_ERR(pthread_cond_destroy(&this->job_done))
 }
 
-void scheduler::submit_job(job &j) {
+int scheduler::submit_job(job &j) {
   this->jobs.push(j);
   int err;
   if ((err = pthread_cond_signal(&this->there_is_work))) {
     throw std::runtime_error(std::strerror(err));
   }
+  return 0;
+}
+
+int scheduler::wait_all_finish() {
+  QS_RETURN_IF_ERR(pthread_mutex_lock(&this->working_mtx))
+  while (this->working) {
+    QS_RETURN_IF_ERR(pthread_cond_wait(&this->job_done, &this->working_mtx))
+  }
+  QS_RETURN_IF_ERR(pthread_mutex_unlock(&this->working_mtx))
+  return 0;
 }
 
 } // namespace qs
