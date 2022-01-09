@@ -76,9 +76,7 @@ public:
 
   void unlock_for_write() { this->lock_unlock_for_write(false); }
 
-  T *get_data() {
-    return &this->data;
-  }
+  T *get_data() { return &this->data; }
 };
 } // namespace qs
 

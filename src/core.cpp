@@ -137,7 +137,8 @@ static void *add_to_tree(void *args) {
   auto str = a->str;
   auto q = a->q;
 
-  std::cout << "Q: " << q->id << " " << q->word_count << " " << q->query_str << "\n";
+  std::cout << "Q: " << q->id << " " << q->word_count << " " << q->query_str
+            << "\n";
   std::cout << "Str: " << str->operator*() << "\n";
 
   auto t = tree->lock_for_read();
