@@ -8,14 +8,16 @@
 namespace qs {
 
 template <typename A> class scheduler {
-private:
-  using worker_t = int(scheduler *);
+  bool stop = false;
   pthread_mutex_t work_mtx = PTHREAD_MUTEX_INITIALIZER;
   pthread_cond_t there_is_work = PTHREAD_COND_INITIALIZER;
-  bool stop = false;
   qs::vector<pthread_t> thread_pool;
+  pthread_mutex_t working_mtx = PTHREAD_MUTEX_INITIALIZER;
+  std::size_t working = 0;
+  pthread_cond_t job_done = PTHREAD_COND_INITIALIZER;
+
   static int worker(qs::scheduler<A> *sched) {
-    while (true) {
+    while (!sched->stop) {
       QS_RETURN_IF_ERR(pthread_mutex_lock(&sched->work_mtx))
       while (!sched->stop && sched->jobs.is_empty()) {
         QS_RETURN_IF_ERR(
@@ -29,8 +31,6 @@ private:
       }
       QS_RETURN_IF_ERR(pthread_mutex_unlock(&sched->work_mtx))
       QS_RETURN_IF_ERR(pthread_cond_signal(&sched->there_is_work))
-      if (should_stop)
-        break;
       if (!j.is_empty()) {
         QS_RETURN_IF_ERR(pthread_mutex_lock(&sched->working_mtx))
         sched->working++;
@@ -44,9 +44,6 @@ private:
     }
     return 0;
   }
-  pthread_mutex_t working_mtx = PTHREAD_MUTEX_INITIALIZER;
-  std::size_t working = 0;
-  pthread_cond_t job_done = PTHREAD_COND_INITIALIZER;
 
 public:
   concurrent_cyclic_buffer<job<A>> jobs;
@@ -66,16 +63,16 @@ public:
   ~scheduler() {
     this->stop = true;
     pthread_cond_signal(&there_is_work);
-    int thread_err = 0;
+    auto thread_err = new int(0);
     for (auto &thread : this->thread_pool) {
-      QS_TRACE_ERR(pthread_join(thread, nullptr))
-      if (thread_err) {
+      QS_TRACE_ERR(pthread_join(thread, (void**) thread_err))
+      if (*thread_err) {
         std::fprintf(stderr,
                      "A thread returned with error: (errno - %d): '%s'\n",
-                     thread_err, std::strerror(thread_err));
+                     *thread_err, std::strerror(*thread_err));
       }
-      thread_err = 0;
     }
+    delete thread_err;
     QS_TRACE_ERR(pthread_mutex_destroy(&this->work_mtx))
     QS_TRACE_ERR(pthread_cond_destroy(&this->there_is_work))
     QS_TRACE_ERR(pthread_mutex_destroy(&this->working_mtx))
