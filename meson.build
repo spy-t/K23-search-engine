@@ -26,7 +26,6 @@ libqs_src = [
 	'src/lib/sstream.cpp',
 	'src/lib/string.cpp',
 	'src/lib/string_view.cpp',
-	'src/lib/scheduler.cpp'
 	]
 
 libqs_static = static_library('qs', libqs_src, include_directories : include, dependencies : threads_dep)

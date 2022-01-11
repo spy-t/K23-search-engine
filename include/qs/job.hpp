@@ -5,20 +5,19 @@
 
 namespace qs {
 
-struct job {
-  std::function<void *(void *args)> f;
-  void *args;
+template <typename T> struct job {
+  using job_t = void *(*)(T args);
+  job_t f;
+  T args;
 
-  job() {
-    this->f = [](void *a) { return a; };
-    this->args = nullptr;
-  }
-  job(std::function<void *(void *args)> f, void *args)
-      : f(std::move(f)), args(args) {}
+  job() = default;
+  job(job_t f, T args) : f(f), args(args) {}
+  job(const job &other) = default;
+  job(job &other) = default;
+  job(job &&other) noexcept = default;
+  job &operator=(const job &other) = default;
 
-  void *operator()() const {
-    return this->f(this->args);
-  }
+  void *operator()() const { return this->f(this->args); }
 };
 
 } // namespace qs
