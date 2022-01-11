@@ -33,7 +33,7 @@ void *scheduler::worker(void *args) {
       QS_RETURN_POINTER_IF_ERR(pthread_mutex_lock(&sched->working_mtx))
       sched->working++;
       QS_RETURN_POINTER_IF_ERR(pthread_mutex_unlock(&sched->working_mtx))
-      j->f(j->args);
+      (*j)();
       QS_RETURN_POINTER_IF_ERR(pthread_mutex_lock(&sched->working_mtx))
       sched->working--;
       QS_RETURN_POINTER_IF_ERR(pthread_mutex_unlock(&sched->working_mtx))

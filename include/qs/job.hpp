@@ -1,6 +1,8 @@
 #ifndef QS_SEARCH_JOB_H
 #define QS_SEARCH_JOB_H
 
+#include <functional>
+
 namespace qs {
 
 struct job {
@@ -13,6 +15,10 @@ struct job {
   }
   job(std::function<void *(void *args)> f, void *args)
       : f(std::move(f)), args(args) {}
+
+  void *operator()() const {
+    return this->f(this->args);
+  }
 };
 
 } // namespace qs
