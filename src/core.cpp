@@ -131,7 +131,7 @@ struct add_to_tree_args {
   ts_bk_tree *tree;
 };
 
-static void *add_to_tree(void *args) {
+static void *add_to_tree(add_to_tree_args *args) {
   auto a = (add_to_tree_args *)args;
   auto tree = a->tree;
   auto str = a->str;
@@ -211,8 +211,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
       args[i].q = q.get();
       args[i].str = &str;
       args[i].tree = &edit_bk_tree();
-      auto j = qs::job{add_to_tree, &args[i]};
-      job_scheduler().submit_job(j);
+      job_scheduler().submit_job(add_to_tree, args);
       i++;
     }
     auto iter = thresholdCounters.lookup(q->match_dist);
@@ -231,8 +230,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
       args[i].q = q.get();
       args[i].str = &str;
       args[i].tree = &hamming_bk_trees()[str.size() - MIN_WORD_LENGTH];
-      auto j = qs::job{add_to_tree, (void *)&args[i]};
-      job_scheduler().submit_job(j);
+      job_scheduler().submit_job(add_to_tree, args);
       i++;
     }
     auto iter = thresholdCounters.lookup(q->match_dist);
@@ -250,8 +248,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
     for (auto &str : unique_words) {
       args[i].q = q.get();
       args[i].str = &str;
-      auto j = qs::job{add_to_hash_table, (void *)&args[i]};
-      job_scheduler().submit_job(j);
+      job_scheduler().submit_job(add_to_hash_table, args);
       i++;
     }
     job_scheduler().wait_all_finish();
