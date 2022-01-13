@@ -11,7 +11,7 @@ void *scheduler::start_worker(qs::worker *w) {
 }
 
 scheduler::scheduler(std::size_t threads_count)
-    : thread_pool{threads_count}, workers{threads_count} {
+    : thread_pool{threads_count}, workers{threads_count * 2} {
   for (std::size_t i{0}; i < threads_count; ++i) {
     pthread_t thread_id;
     workers.push(qs::worker{});
@@ -24,10 +24,7 @@ scheduler::scheduler(std::size_t threads_count)
 
 void scheduler::wait_all_finish() {
   for (auto &worker : workers) {
-    worker.stop();
-  }
-  for (auto &thread_id : thread_pool) {
-    QS_UNWRAP(pthread_join(thread_id, nullptr));
+    worker.wait_done();
   }
 }
 

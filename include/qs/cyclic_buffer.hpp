@@ -6,6 +6,7 @@
 #include <cstring>
 #include <errno.h>
 #include <pthread.h>
+#include <qs/optional.hpp>
 #include <stdexcept>
 #include <string>
 
@@ -44,15 +45,15 @@ public:
     return true;
   }
 
-  T *pop() {
+  qs::optional<T> pop() {
     if (is_empty()) {
-      return nullptr;
+      return qs::optional<T>();
     }
 
     T *ret = &buffer[read];
     read = pos_increment(read);
     size--;
-    return ret;
+    return qs::optional<T>(*ret);
   }
 };
 
@@ -87,13 +88,13 @@ public:
     return r;
   }
 
-  T *pop() {
+  qs::optional<T> pop() {
     int ret;
     if ((ret = pthread_mutex_lock(&read_lock)) != 0) {
       throw std::runtime_error(std::strerror(ret));
     }
     bool should_signal = cb::is_full();
-    T *elem = cb::pop();
+    qs::optional<T> elem = cb::pop();
     if (should_signal) {
       // Wake up a waiting writer to write to the buffer
       if ((ret = pthread_cond_signal(&is_full_cond)) != 0) {

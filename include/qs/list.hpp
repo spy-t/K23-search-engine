@@ -97,10 +97,8 @@ public:
 
   // No copy
   linked_list(const linked_list<V> &other) : head(nullptr), tail(nullptr), size(0) {
-    auto iter = other.head;
-    while (iter != nullptr) {
-      this->append(iter->get());
-      iter = iter->next_node;
+    for (auto &item : other) {
+      this->append(item->get());
     }
   }
   linked_list<V> &operator=(const linked_list<V> &other) {

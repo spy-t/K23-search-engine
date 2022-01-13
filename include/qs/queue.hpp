@@ -66,6 +66,7 @@ public:
       q.dequeue(&item);
       empty_out = q.empty();
       ret = qs::optional<T>{std::move(item)};
+      QS_UNWRAP(pthread_cond_signal(&this->empty));
     }
     QS_UNWRAP(pthread_mutex_unlock(&this->mutex));
     return ret;
@@ -76,17 +77,18 @@ public:
 
     if (!this->closed) {
       this->closed = true;
-      QS_UNWRAP(pthread_cond_broadcast(&this->empty));
+      QS_UNWRAP(pthread_cond_signal(&this->empty));
     }
 
     QS_UNWRAP(pthread_mutex_unlock(&this->mutex));
   }
 
-  bool is_empty() {
+  void wait_empty() {
     QS_UNWRAP(pthread_mutex_lock(&this->mutex));
-    bool ret = q.empty();
+    while (!q.empty()) {
+      QS_UNWRAP(pthread_cond_wait(&this->empty, &this->mutex));
+    }
     QS_UNWRAP(pthread_mutex_unlock(&this->mutex));
-    return ret;
   }
 };
 } // namespace qs
