@@ -9,6 +9,9 @@ project('search', 'cpp',
 if get_option('buildtype').startswith('debug')
   add_project_arguments('-DQS_DEBUG', language: ['cpp'])
   add_project_arguments('-fkeep-inline-functions', language: ['cpp'])
+  linkargs = ['-ltcmalloc', '-lprofiler']
+else
+  linkargs = []
 endif
 
 include = include_directories('include')
@@ -44,6 +47,7 @@ core_test = executable('core_test',
     ],
     link_with : libqs_static,
     include_directories : include,
+    link_args: linkargs
 )
 
 ###
