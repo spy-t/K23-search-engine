@@ -220,7 +220,7 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str);
  *          results returned successfully
  */
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
-                          QueryID **p_query_ids, QueryID **right_query_ids, unsigned int first_result);
+                          QueryID **p_query_ids);
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //*********************************************************************************************
