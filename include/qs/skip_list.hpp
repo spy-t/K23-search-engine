@@ -352,6 +352,10 @@ public:
     return this->size == 0 ? iterator(nullptr) : iterator(this->nodes[0]);
   };
   iterator end() { return iterator(nullptr); };
+  iterator cbegin() const {
+    return this->size == 0 ? iterator(nullptr) : iterator(this->nodes[0]);
+  }
+  iterator cend() const { return iterator(nullptr); }
 };
 } // namespace qs
 
