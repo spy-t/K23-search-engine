@@ -13,24 +13,37 @@ template <class T> class queue {
   linked_list<T> list;
 
 public:
-  queue() {}
+  queue() = default;
   bool empty() const { return list.get_size() == 0; }
   std::size_t size() const { return list.get_size(); }
-  void enqueue(T item) { list.append(item); }
-  // TODO fix this API
-  void dequeue(T *r) {
+
+  void enqueue(const T &item) { list.append(item); }
+  void enqueue(T &&item) { list.append(std::move(item)); }
+
+  qs::optional<T> dequeue() {
     auto head = list.head;
     if (head != nullptr) {
-      *r = head->get();
+      qs::optional<T> ret{std::move(head->get())};
       list.remove(head);
+      return ret;
     }
+    return qs::optional<T>();
   }
 
-  void peek(T *r) {
+  T *peek() {
     auto head = list.head;
     if (head != nullptr) {
-      *r = head->get();
+      return &head->get();
     }
+    return nullptr;
+  }
+
+  T *last() {
+    auto tail = list.tail;
+    if (tail != nullptr) {
+      return &tail->get();
+    }
+    return nullptr;
   }
 };
 
@@ -53,6 +66,16 @@ public:
     return previously_empty;
   }
 
+  T *peek() {
+    QS_UNWRAP(pthread_mutex_lock(&this->mutex));
+    while (q.empty() && !this->closed) {
+      QS_UNWRAP(pthread_cond_wait(&this->empty, &this->mutex));
+    }
+    auto ret = q.peek();
+    QS_UNWRAP(pthread_mutex_unlock(&this->mutex));
+    return ret;
+  }
+
   qs::optional<T> dequeue(bool &empty_out) {
     QS_UNWRAP(pthread_mutex_lock(&this->mutex));
     while (q.empty() && !this->closed) {
@@ -62,8 +85,7 @@ public:
     if (q.empty()) {
       empty_out = true;
     } else {
-      T item;
-      q.dequeue(&item);
+      auto item = q.dequeue();
       empty_out = q.empty();
       ret = qs::optional<T>{std::move(item)};
       QS_UNWRAP(pthread_cond_signal(&this->empty));

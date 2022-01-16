@@ -131,7 +131,7 @@ void TestSigmod(const char *test_file_str, int time_limit_seconds,
         unsigned int num_res = 0;
         unsigned int *query_ids = 0;
 
-        ErrorCode err = GetNextAvailRes(&doc_id, &num_res, &query_ids);
+        ErrorCode err = GetNextAvailRes(&doc_id, &num_res, &query_ids, cur_results, first_result);
 
         if (err == EC_NO_AVAIL_RES) {
           fprintf(out_file,

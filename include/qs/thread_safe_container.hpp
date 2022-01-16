@@ -12,6 +12,11 @@ template <typename T> class thread_safe_container {
 public:
   explicit thread_safe_container(T &&data) : data(std::move(data)) {}
   thread_safe_container() : data() {}
+  thread_safe_container(const thread_safe_container &other) {
+    if (this != &other) {
+      this->data = other.data;
+    }
+  }
 
   thread_safe_container &operator=(thread_safe_container<T> &&other) noexcept {
     if (this != &other) {
