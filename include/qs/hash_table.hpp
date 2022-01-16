@@ -230,7 +230,7 @@ public:
     V *value;
   };
 
-  entry __attribute__ ((noinline, used)) *entries() {
+  entry __attribute__((noinline, used)) * entries() {
     auto e = new entry[this->size];
     std::size_t i = 0;
     for (iterator iter = begin(); iter != end(); ++iter) {
