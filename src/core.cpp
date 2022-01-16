@@ -10,7 +10,7 @@
 #include <qs/thread_safe_container.hpp>
 #include <qs/vector.hpp>
 
-#define THREADS_COUNT 2
+#define THREADS_COUNT 8
 
 struct Query {
   QueryID id;
@@ -287,7 +287,7 @@ static int comp(const void *a, const void *b) {
   return *(QueryID *)a > *(QueryID *)b;
 }
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
-                          QueryID **p_query_ids, QueryID **curr_ids, unsigned int first_result) {
+                          QueryID **p_query_ids) {
   job_scheduler().wait_all_finish();
   auto opt = results.dequeue();
   if (opt.is_empty()) {
@@ -297,24 +297,16 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
   *p_doc_id = docRes.docId;
   *p_num_res = 0;
 
-  *p_query_ids = static_cast<QueryID *>(malloc(sizeof(QueryID) * queries.get_size()));
+  *p_query_ids =
+      static_cast<QueryID *>(malloc(sizeof(QueryID) * queries.get_size()));
 
-  auto r = docRes.results.lock();
+  auto r = docRes.results.get_data();
   for (auto &qRes : (*r)) {
     if (qRes.matched_words.get_size() == qRes.query->word_count) {
       (*p_query_ids)[(*p_num_res)++] = qRes.query->id;
     }
   }
-  docRes.results.unlock();
 
   qsort(*p_query_ids, *p_num_res, sizeof(QueryID), &comp);
-
-  auto flag = false;
-  auto right_query_ids = curr_ids[(*p_doc_id) - first_result];
-  for (auto i = 0ul; i < *p_num_res && !flag; i++) {
-    if ((*p_query_ids)[i] != right_query_ids[i]) {
-      flag = true;
-    }
-  }
   return EC_SUCCESS;
 }
