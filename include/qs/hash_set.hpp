@@ -10,6 +10,8 @@ template <class K, class Hash = std::hash<K>> class hash_set {
   hash_table<K, char> table;
 
 public:
+  hash_set() = default;
+  explicit hash_set(std::size_t capacity) : table{capacity} {};
   struct iterator;
 
   iterator insert(const K &key) {
