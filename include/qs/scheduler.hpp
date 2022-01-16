@@ -21,9 +21,8 @@ class worker {
   concurrent_queue<std::function<void()>> queue;
 
 public:
-  template <class Fun, class... Args>
-  void enqueue(Fun &&fn, Args&&... args) {
-    queue.enqueue(std::bind(std::move(fn), std::forward<Args&&>(args)...));
+  template <class Fun, class... Args> void enqueue(Fun &&fn, Args &&...args) {
+    queue.enqueue(std::bind(std::move(fn), std::forward<Args &&>(args)...));
   }
 
   void start() {
@@ -41,9 +40,7 @@ public:
 
   void stop() { queue.close(); }
 
-  void wait_done() {
-    queue.wait_empty();
-  }
+  void wait_done() { queue.wait_empty(); }
 };
 
 class scheduler {
@@ -69,7 +66,8 @@ public:
 
   template <class Fun, class... Args>
   void submit_job(Fun &&fn, Args &&...args) {
-    workers[current_worker].enqueue(std::move(fn), std::forward<Args&&>(args)...);
+    workers[current_worker].enqueue(std::move(fn),
+                                    std::forward<Args &&>(args)...);
     current_worker = (current_worker + 1) % workers.get_size();
   }
   void wait_all_finish();

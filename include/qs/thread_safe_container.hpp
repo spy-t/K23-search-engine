@@ -13,9 +13,22 @@ public:
   explicit thread_safe_container(T &&data) : data(std::move(data)) {}
   thread_safe_container() : data() {}
 
-  thread_safe_container &operator=(thread_safe_container &&other) noexcept {
+  thread_safe_container &operator=(thread_safe_container<T> &&other) noexcept {
     if (this != &other) {
       this->data = std::move(other.data);
+      pthread_mutex_destroy(&this->mutex);
+      this->mutex = std::move(other.mutex);
+    }
+    return *this;
+  }
+
+  thread_safe_container(thread_safe_container<T> &&other)
+      : data{std::move(other.data)} {}
+
+  thread_safe_container &
+  operator=(const thread_safe_container<T> &other) noexcept {
+    if (this != &other) {
+      this->data = other.data;
     }
     return *this;
   }

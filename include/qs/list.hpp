@@ -96,7 +96,8 @@ public:
   linked_list() : head(nullptr), tail(nullptr), size(0) {}
 
   // No copy
-  linked_list(const linked_list<V> &other) : head(nullptr), tail(nullptr), size(0) {
+  linked_list(const linked_list<V> &other)
+      : head(nullptr), tail(nullptr), size(0) {
     for (auto &item : other) {
       this->append(item->get());
     }
