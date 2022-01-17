@@ -10,7 +10,7 @@
 #include <qs/thread_safe_container.hpp>
 #include <qs/vector.hpp>
 
-#define THREADS_COUNT 4
+#define THREADS_COUNT 8
 
 struct Query {
   QueryID id;
@@ -19,7 +19,7 @@ struct Query {
   unsigned int match_dist;
   unsigned int word_count;
   qs::string query_str;
-  qs::hash_set<qs::string_view> unique_words;
+  qs::hash_set<qs::string_view> unique_words{MAX_QUERY_WORDS};
 
   Query(QueryID id, bool active, MatchType match_type, unsigned int match_dist,
         unsigned int word_count)
@@ -27,15 +27,27 @@ struct Query {
         word_count(word_count) {}
 };
 
-static qs::hash_table<QueryID, qs::unique_pointer<Query>> queries;
+static qs::hash_table<QueryID, qs::unique_pointer<Query>> queries{4096};
 struct QueryResult {
   Query *query;
   qs::hash_set<qs::string_view> matched_words;
 };
 
 struct DocumentResults {
-  DocID docId;
-  qs::hash_table<QueryID, QueryResult> results{};
+  DocID docId{};
+  qs::thread_safe_container<qs::hash_table<QueryID, QueryResult>> results;
+  qs::hash_set<qs::string_view> words;
+  qs::string doc_str;
+
+  DocumentResults() = default;
+  DocumentResults(DocID docId, size_t results_cap, const char *doc_str)
+      : docId{docId}, results{qs::hash_table<QueryID, QueryResult>{
+                          results_cap}},
+        doc_str(doc_str) {}
+  DocumentResults(DocumentResults &&other) noexcept
+      : docId{other.docId}, results{std::move(other.results)},
+        words{std::move(other.words)}, doc_str(std::move(other.doc_str)) {}
+  DocumentResults(const DocumentResults &other) = delete;
 };
 
 struct DistanceThresholdCounters {
@@ -50,7 +62,7 @@ using ts_hash_table =
     qs::thread_safe_container<qs::hash_table<qs::string_view, qvec>>;
 
 static ts_hash_table &exact() {
-  static ts_hash_table container{qs::hash_table<qs::string_view, qvec>{}};
+  static ts_hash_table container{qs::hash_table<qs::string_view, qvec>{4096}};
   return container;
 }
 
@@ -77,51 +89,18 @@ static ts_bk_tree *hamming_bk_trees() {
 }
 
 // Always the last is the results of the active doc
-static qs::vector<DocumentResults> results;
+static qs::queue<DocumentResults> results;
 static qs::hash_table<unsigned int, DistanceThresholdCounters>
-    thresholdCounters;
+    thresholdCounters{128};
 
 ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
 ErrorCode DestroyIndex() { return EC_SUCCESS; }
 
-static void
-add_query_to_doc_results(qs::hash_table<QueryID, QueryResult> &resultsTable,
-                         Query *q, qs::string_view &word) {
-  auto iter = resultsTable.lookup(q->id);
-  if (iter == resultsTable.end()) {
-    auto queryRes = QueryResult{};
-    queryRes.query = q;
-    queryRes.matched_words.insert(word);
-    resultsTable.insert(q->id, std::move(queryRes));
-  } else {
-    iter->matched_words.insert(word);
-  }
-}
-
-static void match_queries(ts_bk_tree &index, qs::string_view &w,
-                          DocumentResults &docRes, MatchType match_type) {
-  for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
-       ++iter) {
-    if ((match_type == MT_EDIT_DIST && iter->edit == 0) ||
-        (match_type == MT_HAMMING_DIST && iter->hamming == 0)) {
-      continue;
-    }
-    auto t = index.get_data();
-    auto matchedWords = t->match((int)iter.key(), w);
-    for (auto &mw : matchedWords) {
-      for (auto mq : mw->payload) {
-        if (mq->active && iter.key() == mq->match_dist) {
-          add_query_to_doc_results(docRes.results, mq, mw->word);
-        }
-      }
-    }
-  }
-}
-
 static void add_to_tree(Query *q, qs::string_view *str, ts_bk_tree *tree) {
   auto t = tree->lock();
-  if (t == nullptr) return;
+  if (t == nullptr)
+    return;
   auto found = t->find(*str);
   if (found.is_empty()) {
     auto en = entry(*str);
@@ -133,9 +112,11 @@ static void add_to_tree(Query *q, qs::string_view *str, ts_bk_tree *tree) {
   tree->unlock();
 }
 
-static void add_to_hash_table(Query *q, qs::string_view *str, ts_hash_table *ht) {
+static void add_to_hash_table(Query *q, qs::string_view *str,
+                              ts_hash_table *ht) {
   auto e = ht->lock();
-  if (e == nullptr) return;
+  if (e == nullptr)
+    return;
   auto f = e->lookup(*str);
   if (f == e->end()) {
     auto qv = qvec{};
@@ -152,8 +133,11 @@ static qs::scheduler &job_scheduler() {
   return sched;
 }
 
+bool query_has_started = false;
+
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
+  query_has_started = true;
   auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist, 0);
   q->query_str = qs::string{query_str};
   qs::parse_string(q->query_str.data(), ' ', [&q](qs::string_view &word) {
@@ -178,7 +162,9 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   } else if (match_type == MT_HAMMING_DIST) {
     std::size_t i = 0;
     for (auto &str : q->unique_words) {
-      job_scheduler().submit_job(add_to_tree, q.get(), &str, &hamming_bk_trees()[str.size() - MIN_WORD_LENGTH]);
+      job_scheduler().submit_job(
+          add_to_tree, q.get(), &str,
+          &hamming_bk_trees()[str.size() - MIN_WORD_LENGTH]);
       i++;
     }
     auto iter = thresholdCounters.lookup(q->match_dist);
@@ -202,6 +188,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
 }
 
 ErrorCode EndQuery(QueryID query_id) {
+  job_scheduler().wait_all_finish();
   auto i = queries.lookup(query_id);
   if (i == queries.end()) {
     return EC_FAIL;
@@ -217,63 +204,109 @@ ErrorCode EndQuery(QueryID query_id) {
   return EC_SUCCESS;
 }
 
-ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
-  job_scheduler().wait_all_finish();
-  qs::hash_set<qs::string_view> dedu;
-  qs::parse_string(doc_str, ' ',
-                   [&](qs::string_view &word) { dedu.insert(word); });
-  auto docRes = DocumentResults{};
-  docRes.docId = doc_id;
-  for (auto &w : dedu) {
-    // Check for edit distance
-    auto &edit = edit_bk_tree();
-    match_queries(edit, w, docRes, MT_EDIT_DIST);
+static void add_query_to_doc_results(
+    qs::thread_safe_container<qs::hash_table<QueryID, QueryResult>>
+        &resultsTable,
+    Query *q, qs::string_view *word) {
+  auto rt = resultsTable.lock();
+  auto iter = rt->lookup(q->id);
+  if (iter == rt->end()) {
+    auto queryRes = QueryResult{};
+    queryRes.query = q;
+    queryRes.matched_words.insert(*word);
+    rt->insert(q->id, std::move(queryRes));
+  } else {
+    iter->matched_words.insert(*word);
+  }
+  resultsTable.unlock();
+}
 
-    // Check for hamming distance
-    auto hams = hamming_bk_trees();
-    auto &ham = hams[w.size() - MIN_WORD_LENGTH];
-    match_queries(ham, w, docRes, MT_HAMMING_DIST);
-
-    // Check for exact match
-    auto e = exact().get_data();
-    auto match = e->lookup(w);
-    if (match != e->end()) {
-      for (auto exactRes : *match) {
-        if (exactRes->active) {
-          add_query_to_doc_results(docRes.results, exactRes, match.key());
+static void match_queries(ts_bk_tree *index, qs::string_view *w,
+                          DocumentResults *docRes, MatchType match_type) {
+  for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
+       ++iter) {
+    if ((match_type == MT_EDIT_DIST && iter->edit == 0) ||
+        (match_type == MT_HAMMING_DIST && iter->hamming == 0)) {
+      continue;
+    }
+    auto t = index->get_data();
+    auto matchedWords = t->match((int)iter.key(), *w);
+    for (auto &mw : matchedWords) {
+      for (auto mq : mw->payload) {
+        if (mq->active && iter.key() == mq->match_dist) {
+          add_query_to_doc_results(docRes->results, mq, &mw->word);
         }
       }
     }
   }
-  results.push(std::move(docRes));
+}
+
+bool match_has_started = false;
+
+ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
+  if (query_has_started) {
+    job_scheduler().wait_all_finish();
+    query_has_started = false;
+  }
+  match_has_started = true;
+  results.enqueue(DocumentResults{doc_id, queries.get_size() * 2, doc_str});
+  auto &docRes = *(results.last());
+  qs::parse_string(docRes.doc_str.data(), ' ',
+                   [&](qs::string_view &word) { docRes.words.insert(word); });
+  for (auto &w : docRes.words) {
+    // Check for edit distance
+    auto &edit = edit_bk_tree();
+    job_scheduler().submit_job(match_queries, &edit, &w, &docRes, MT_EDIT_DIST);
+
+    // Check for hamming distance
+    auto hams = hamming_bk_trees();
+    auto &ham = hams[w.size() - MIN_WORD_LENGTH];
+    job_scheduler().submit_job(match_queries, &ham, &w, &docRes,
+                               MT_HAMMING_DIST);
+
+    // Check for exact match
+    job_scheduler().submit_job(
+        [](ts_hash_table *e, qs::string_view *w, DocumentResults *docRes) {
+          auto ht = e->get_data();
+          auto match = ht->lookup(*w);
+          if (match != ht->end()) {
+            for (auto exactRes : *match) {
+              if (exactRes->active) {
+                add_query_to_doc_results(docRes->results, exactRes,
+                                         &match.key());
+              }
+            }
+          }
+        },
+        &exact(), &w, &docRes);
+  }
   return EC_SUCCESS;
 }
 
-static size_t next_result = 0;
 static int comp(const void *a, const void *b) {
   return *(QueryID *)a > *(QueryID *)b;
 }
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
-  if (next_result + 1 > results.get_size()) {
-    return EC_FAIL;
+  job_scheduler().wait_all_finish();
+  auto opt = results.dequeue();
+  if (opt.is_empty()) {
+    return EC_NO_AVAIL_RES;
   }
-  auto &docRes = results[next_result++];
+  auto &docRes = opt.get();
   *p_doc_id = docRes.docId;
-  int counter = 0;
-  for (auto &qRes : docRes.results) {
+  *p_num_res = 0;
+
+  *p_query_ids =
+      static_cast<QueryID *>(malloc(sizeof(QueryID) * queries.get_size()));
+
+  auto r = docRes.results.get_data();
+  for (auto &qRes : (*r)) {
     if (qRes.matched_words.get_size() == qRes.query->word_count) {
-      counter++;
+      (*p_query_ids)[(*p_num_res)++] = qRes.query->id;
     }
   }
-  *p_num_res = counter;
-  *p_query_ids = static_cast<QueryID *>(malloc(sizeof(QueryID) * counter));
-  int i = 0;
-  for (auto &qRes : docRes.results) {
-    if (qRes.matched_words.get_size() == qRes.query->word_count) {
-      (*p_query_ids)[i++] = qRes.query->id;
-    }
-  }
-  qsort(*p_query_ids, counter, sizeof(QueryID), &comp);
+
+  qsort(*p_query_ids, *p_num_res, sizeof(QueryID), &comp);
   return EC_SUCCESS;
 }

@@ -28,12 +28,13 @@ static QS_FORCE_INLINE void init_edit_buffer(int *buffer, int len) {
   }
 }
 
+#include <core.h>
 #ifndef EDIT_BUFFER_SIZE
-#define EDIT_BUFFER_SIZE 64ul
+#define EDIT_BUFFER_SIZE (MAX_WORD_LENGTH + MAX_WORD_LENGTH)
 #endif
 
 int edit_distance(qs::string_view s1, qs::string_view s2, int max) {
-  static int d[EDIT_BUFFER_SIZE];
+  int d[EDIT_BUFFER_SIZE];
   int max_len = (int)s1.size();
   auto *max_str = s1.data();
   int min_len = (int)s2.size();

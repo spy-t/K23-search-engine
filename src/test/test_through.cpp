@@ -202,6 +202,7 @@ void TestSigmod(const char *test_file_str, int time_limit_seconds,
           }
           fprintf(out_file, "\n");
           fflush(out_file);
+          free(query_ids);
           return;
         }
 

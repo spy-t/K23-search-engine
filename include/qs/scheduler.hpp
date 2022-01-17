@@ -27,13 +27,14 @@ public:
 
   void start() {
     while (true) {
-      bool is_empty;
-      auto job = queue.dequeue(is_empty);
+      auto job = queue.peek();
+      auto is_empty = false;
       if (queue.is_closed()) {
         break;
       }
-      if (!job.is_empty()) {
-        job.get().operator()();
+      if (job != nullptr) {
+        (*job)();
+        queue.dequeue(is_empty);
       }
     }
   }

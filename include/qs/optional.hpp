@@ -33,6 +33,8 @@ private:
 
 public:
   explicit optional() : e(), has_value(false) {}
+  explicit optional(const T &v) : value{v}, has_value{true} {}
+  explicit optional(T &&v) : value{std::move(v)}, has_value{true} {}
   template <class... Args>
   explicit optional(Args &&...args)
       : value(std::forward<Args>(args)...), has_value(true) {}

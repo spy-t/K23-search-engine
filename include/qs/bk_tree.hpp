@@ -59,21 +59,21 @@ template <typename T> class bk_tree_node {
 
   template <typename Q>
   void match(const distance_function &df, int threshold, Q query,
-             int parent_to_query, qs::linked_list<T *> &result) {
+             int parent_to_query, qs::linked_list<T *> &result) const {
     int lower_bound = parent_to_query - threshold;
     int upper_bound = parent_to_query + threshold;
-    for (auto &child : this->children) {
-      int dist;
-      dist = df(child->data.get_string_view(), query.get_string_view(),
-                upper_bound);
+    for (auto child = this->children.cbegin(); child != this->children.cend();
+         child++) {
+      int dist = df(child.operator*()->data.get_string_view(),
+                    query.get_string_view(), upper_bound);
       if (dist <= threshold) {
-        result.append(&child->data);
+        result.append(&child.operator*()->data);
       }
 
-      if (child->distance_from_parent < lower_bound) {
+      if (child.operator*()->distance_from_parent < lower_bound) {
         continue;
-      } else if (child->distance_from_parent <= upper_bound) {
-        child->match(df, threshold, query, dist, result);
+      } else if (child.operator*()->distance_from_parent <= upper_bound) {
+        child.operator*()->match(df, threshold, query, dist, result);
       } else {
         break;
       }
@@ -152,7 +152,7 @@ public:
   }
 
   template <typename Q>
-  qs::linked_list<T *> match(int threshold, const Q query) {
+  qs::linked_list<T *> match(int threshold, const Q query) const {
     if (this->root == nullptr) {
       return qs::linked_list<T *>();
     }
@@ -168,7 +168,7 @@ public:
     return ret;
   }
 
-  template <typename Q> qs::optional<T *> find(const Q what) {
+  template <typename Q> qs::optional<T *> find(const Q what) const {
     auto res = this->match(0, what);
     if (res.get_size() != 1) {
       return qs::optional<T *>();

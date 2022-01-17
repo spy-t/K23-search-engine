@@ -40,7 +40,7 @@ TEST_CASE("optional behaves correctly", "[optional]") {
   }
 
   SECTION("for trivially copyable types") {
-    qs::optional<trivial> opt(5);
+    qs::optional<trivial> opt{5};
     qs::optional<trivial> nullopt;
 
     REQUIRE(opt.get().x == 5);
