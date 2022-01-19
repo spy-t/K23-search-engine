@@ -98,14 +98,7 @@ ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
 ErrorCode DestroyIndex() { return EC_SUCCESS; }
 
-struct add_to_tree_args {
-  Query *q;
-  qs::string_view *str;
-  ts_bk_tree *tree;
-};
-
 static void *add_to_tree(Query *q, qs::string_view *str, ts_bk_tree *tree) {
-
   auto t = tree->lock();
   if (t == nullptr)
     return nullptr;
@@ -130,12 +123,6 @@ struct add_to_tree_job : public qs::job {
       : q{q}, str{str}, tree{tree} {}
 
   void operator()() override { add_to_tree(q, str, tree); }
-};
-
-struct add_to_hash_table_args {
-  Query *q;
-  qs::string_view *str;
-  ts_hash_table *ht;
 };
 
 static void *add_to_hash_table(Query *q, qs::string_view *str,
@@ -185,8 +172,10 @@ static qs::scheduler &job_scheduler() {
 
 bool query_has_started = false;
 
+std::size_t active_queries = 0;
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
+  active_queries++;
   query_has_started = true;
   auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist, 0);
   q->query_str = qs::string{query_str};
@@ -239,6 +228,7 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
 }
 
 ErrorCode EndQuery(QueryID query_id) {
+  active_queries--;
   job_scheduler().wait_all_finish();
   auto i = queries.lookup(query_id);
   if (i == queries.end()) {
@@ -271,13 +261,6 @@ static void add_query_to_doc_results(
   }
   resultsTable.unlock();
 }
-
-struct match_queries_args {
-  ts_bk_tree *index;
-  qs::string_view *w;
-  DocumentResults *docRes;
-  MatchType match_type;
-};
 
 static void *match_queries(ts_bk_tree *index, qs::string_view *w,
                            DocumentResults *docRes, MatchType match_type) {
@@ -314,15 +297,8 @@ struct match_queries_job : public qs::job {
   void operator()() override { match_queries(index, w, docRes, match_type); }
 };
 
-struct match_exact_args {
-  ts_hash_table *e;
-  qs::string_view *w;
-  DocumentResults *docRes;
-};
-
 static void *match_exact(ts_hash_table *e, qs::string_view *w,
                          DocumentResults *docRes) {
-
   auto ht = e->get_data();
   auto match = ht->lookup(*w);
   if (match != ht->end()) {
@@ -354,7 +330,7 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
     query_has_started = false;
   }
   match_has_started = true;
-  results.enqueue(DocumentResults{doc_id, queries.get_size() * 2, doc_str});
+  results.enqueue(DocumentResults{doc_id, active_queries, doc_str});
   auto &docRes = *(results.last());
   qs::parse_string(docRes.doc_str.data(), ' ',
                    [&](qs::string_view &word) { docRes.words.insert(word); });
