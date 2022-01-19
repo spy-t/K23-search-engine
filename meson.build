@@ -9,7 +9,11 @@ project('search', 'cpp',
 if get_option('buildtype').startswith('debug')
   add_project_arguments('-DQS_DEBUG', language: ['cpp'])
   add_project_arguments('-fkeep-inline-functions', language: ['cpp'])
-  linkargs = ['-ltcmalloc', '-lprofiler']
+  if get_option('heapprof') == true
+    linkargs = ['-ltcmalloc', '-lprofiler']
+  else
+    linkargs = []
+  endif
 else
   linkargs = []
 endif
