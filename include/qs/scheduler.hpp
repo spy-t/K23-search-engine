@@ -23,9 +23,8 @@ public:
       }
       if (job != nullptr) {
         (**job)();
+        delete *job;
         queue.dequeue(is_empty);
-
-        delete job;
       }
     }
   }
