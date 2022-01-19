@@ -3,6 +3,7 @@
 #include <qs/entry.hpp>
 #include <qs/hash_set.hpp>
 #include <qs/hash_table.hpp>
+#include <qs/job.h>
 #include <qs/memory.hpp>
 #include <qs/parser.hpp>
 #include <qs/scheduler.hpp>
@@ -10,7 +11,7 @@
 #include <qs/thread_safe_container.hpp>
 #include <qs/vector.hpp>
 
-#define THREADS_COUNT 4
+#define DEFAULT_THREADS_COUNT 16
 
 struct Query {
   QueryID id;
@@ -103,11 +104,7 @@ struct add_to_tree_args {
   ts_bk_tree *tree;
 };
 
-static void *add_to_tree(void *args) {
-  auto a = (add_to_tree_args *)args;
-  Query *q = a->q;
-  qs::string_view *str = a->str;
-  ts_bk_tree *tree = a->tree;
+static void *add_to_tree(Query *q, qs::string_view *str, ts_bk_tree *tree) {
 
   auto t = tree->lock();
   if (t == nullptr)
@@ -124,17 +121,25 @@ static void *add_to_tree(void *args) {
   return nullptr;
 }
 
+struct add_to_tree_job : public qs::job {
+  Query *q;
+  qs::string_view *str;
+  ts_bk_tree *tree;
+
+  add_to_tree_job(Query *q, qs::string_view *str, ts_bk_tree *tree)
+      : q{q}, str{str}, tree{tree} {}
+
+  void operator()() override { add_to_tree(q, str, tree); }
+};
+
 struct add_to_hash_table_args {
   Query *q;
   qs::string_view *str;
   ts_hash_table *ht;
 };
 
-static void *add_to_hash_table(void *args) {
-  auto a = (add_to_hash_table_args *)args;
-  Query *q = a->q;
-  qs::string_view *str = a->str;
-  ts_hash_table *ht = a->ht;
+static void *add_to_hash_table(Query *q, qs::string_view *str,
+                               ts_hash_table *ht) {
 
   auto e = ht->lock();
   if (e == nullptr)
@@ -151,15 +156,34 @@ static void *add_to_hash_table(void *args) {
   return nullptr;
 }
 
+struct add_to_hash_table_job : public qs::job {
+  Query *q;
+  qs::string_view *str;
+  ts_hash_table *ht;
+
+  add_to_hash_table_job(Query *q, qs::string_view *str, ts_hash_table *ht)
+      : q{q}, str{str}, ht{ht} {}
+
+  void operator()() override { add_to_hash_table(q, str, ht); }
+};
+
 static qs::scheduler &job_scheduler() {
-  static qs::scheduler sched{THREADS_COUNT};
+  static bool scheduler_initialized = false;
+  static u32 threads = DEFAULT_THREADS_COUNT;
+  if (!scheduler_initialized) {
+    const char *search_threads = std::getenv("SEARCH_THREADS");
+    if (search_threads && std::strlen(search_threads)) {
+      threads = std::atoi(search_threads);
+      if (!threads) {
+        threads = DEFAULT_THREADS_COUNT;
+      }
+    }
+  }
+  static qs::scheduler sched{threads};
   return sched;
 }
 
 bool query_has_started = false;
-
-qs::vector<add_to_tree_args> ata{2048};
-qs::vector<add_to_hash_table_args> ahta{2048};
 
 ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
@@ -176,8 +200,8 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   if (match_type == MT_EDIT_DIST) {
     std::size_t i = 0;
     for (auto &str : q->unique_words) {
-      ata.push(add_to_tree_args{q.get(), &str, &edit_bk_tree()});
-      job_scheduler().submit_job(add_to_tree, (void *)&*(ata.rbegin()));
+      job_scheduler().submit_job(
+          new add_to_tree_job{q.get(), &str, &edit_bk_tree()});
       i++;
     }
     auto iter = thresholdCounters.lookup(q->match_dist);
@@ -189,9 +213,8 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   } else if (match_type == MT_HAMMING_DIST) {
     std::size_t i = 0;
     for (auto &str : q->unique_words) {
-      ata.push(add_to_tree_args{
+      job_scheduler().submit_job(new add_to_tree_job{
           q.get(), &str, &hamming_bk_trees()[str.size() - MIN_WORD_LENGTH]});
-      job_scheduler().submit_job(add_to_tree, (void *)&*(ata.rbegin()));
       i++;
     }
     auto iter = thresholdCounters.lookup(q->match_dist);
@@ -204,8 +227,8 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
   } else if (match_type == MT_EXACT_MATCH) {
     std::size_t i = 0;
     for (auto &str : q->unique_words) {
-      ahta.push(add_to_hash_table_args{q.get(), &str, &exact()});
-      job_scheduler().submit_job(add_to_hash_table, (void *)&*(ahta.rbegin()));
+      job_scheduler().submit_job(
+          new add_to_hash_table_job{q.get(), &str, &exact()});
       i++;
     }
   } else {
@@ -256,13 +279,8 @@ struct match_queries_args {
   MatchType match_type;
 };
 
-static void *match_queries(void *args) {
-  auto a = (match_queries_args *)args;
-  ts_bk_tree *index = a->index;
-  qs::string_view *w = a->w;
-  DocumentResults *docRes = a->docRes;
-  MatchType match_type = a->match_type;
-
+static void *match_queries(ts_bk_tree *index, qs::string_view *w,
+                           DocumentResults *docRes, MatchType match_type) {
   for (auto iter = thresholdCounters.begin(); iter != thresholdCounters.end();
        ++iter) {
     if ((match_type == MT_EDIT_DIST && iter->edit == 0) ||
@@ -282,17 +300,28 @@ static void *match_queries(void *args) {
   return nullptr;
 }
 
+struct match_queries_job : public qs::job {
+
+  ts_bk_tree *index;
+  qs::string_view *w;
+  DocumentResults *docRes;
+  MatchType match_type;
+
+  match_queries_job(ts_bk_tree *index, qs::string_view *w,
+                    DocumentResults *docRes, MatchType match_type)
+      : index{index}, w{w}, docRes{docRes}, match_type{match_type} {}
+
+  void operator()() override { match_queries(index, w, docRes, match_type); }
+};
+
 struct match_exact_args {
   ts_hash_table *e;
   qs::string_view *w;
   DocumentResults *docRes;
 };
 
-static void *match_exact(void *args) {
-  auto a = (match_exact_args *)args;
-  ts_hash_table *e = a->e;
-  qs::string_view *w = a->w;
-  DocumentResults *docRes = a->docRes;
+static void *match_exact(ts_hash_table *e, qs::string_view *w,
+                         DocumentResults *docRes) {
 
   auto ht = e->get_data();
   auto match = ht->lookup(*w);
@@ -306,10 +335,18 @@ static void *match_exact(void *args) {
   return nullptr;
 }
 
-bool match_has_started = false;
+struct match_exact_job : public qs::job {
+  ts_hash_table *e;
+  qs::string_view *w;
+  DocumentResults *docRes;
 
-qs::vector<match_queries_args> mqa{2048};
-qs::vector<match_exact_args> mea{2048};
+  match_exact_job(ts_hash_table *e, qs::string_view *w, DocumentResults *docRes)
+      : e{e}, w{w}, docRes{docRes} {}
+
+  void operator()() override { match_exact(e, w, docRes); }
+};
+
+bool match_has_started = false;
 
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   if (query_has_started) {
@@ -324,18 +361,17 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   for (auto &w : docRes.words) {
     // Check for edit distance
     auto &edit = edit_bk_tree();
-    mqa.push(match_queries_args{&edit, &w, &docRes, MT_EDIT_DIST});
-    job_scheduler().submit_job(match_queries, (void *)&*(mqa.rbegin()));
+    job_scheduler().submit_job(
+        new match_queries_job{&edit, &w, &docRes, MT_EDIT_DIST});
 
     // Check for hamming distance
     auto hams = hamming_bk_trees();
     auto &ham = hams[w.size() - MIN_WORD_LENGTH];
-    mqa.push(match_queries_args{&ham, &w, &docRes, MT_HAMMING_DIST});
-    job_scheduler().submit_job(match_queries, (void *)&*(mqa.rbegin()));
+    job_scheduler().submit_job(
+        new match_queries_job{&ham, &w, &docRes, MT_HAMMING_DIST});
 
     // Check for exact match
-    mea.push(match_exact_args{&exact(), &w, &docRes});
-    job_scheduler().submit_job(match_exact, (void *)&*(mea.rbegin()));
+    job_scheduler().submit_job(new match_exact_job{&exact(), &w, &docRes});
   }
   return EC_SUCCESS;
 }

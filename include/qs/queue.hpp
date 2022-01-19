@@ -66,6 +66,17 @@ public:
     return previously_empty;
   }
 
+  bool enqueue(T &&data) {
+    QS_UNWRAP(pthread_mutex_lock(&this->mutex));
+    bool previously_empty = q.empty();
+    q.enqueue(std::move(data));
+    QS_UNWRAP(pthread_mutex_unlock(&this->mutex));
+    if (previously_empty) {
+      QS_UNWRAP(pthread_cond_signal(&this->empty));
+    }
+    return previously_empty;
+  }
+
   T *peek() {
     QS_UNWRAP(pthread_mutex_lock(&this->mutex));
     while (q.empty() && !this->closed) {

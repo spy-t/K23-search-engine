@@ -2,19 +2,17 @@
 #define QS_SCHEDULER_H
 
 #include <qs/cyclic_buffer.hpp>
+#include <qs/job.h>
 #include <qs/queue.hpp>
 #include <qs/vector.hpp>
-#include <qs/job.h>
 
 namespace qs {
 
 class worker {
-  concurrent_queue<qs::job> queue;
+  concurrent_queue<qs::job *> queue;
 
 public:
-  void enqueue(void *(*fn)(void *), void *args) {
-    queue.enqueue(job{fn, args});
-  }
+  void enqueue(job *j) { queue.enqueue(j); }
 
   void start() {
     while (true) {
@@ -24,8 +22,10 @@ public:
         break;
       }
       if (job != nullptr) {
-        job->fun(job->args);
+        (**job)();
         queue.dequeue(is_empty);
+
+        delete job;
       }
     }
   }
@@ -56,8 +56,8 @@ public:
     }
   }
 
-  void submit_job(void *(*fn)(void *), void *args) {
-    workers[current_worker].enqueue(fn, args);
+  void submit_job(job *j) {
+    workers[current_worker].enqueue(j);
     current_worker = (current_worker + 1) % workers.get_size();
   }
   void wait_all_finish();

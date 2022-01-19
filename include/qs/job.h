@@ -4,8 +4,8 @@
 namespace qs {
 
 struct job {
-  void *(*fun)(void *f);
-  void *args;
+  virtual ~job() {}
+  virtual void operator()() {}
 };
 
 } // namespace qs

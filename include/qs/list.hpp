@@ -21,7 +21,7 @@ template <class V> class list_node {
   explicit list_node(const V &value)
       : value(value), next_node(nullptr), prev_node(nullptr) {}
   explicit list_node(V &&value)
-      : value(value), next_node(nullptr), prev_node(nullptr) {}
+      : value(std::move(value)), next_node(nullptr), prev_node(nullptr) {}
 
   explicit list_node(const V &value, list_node<V> *prev, list_node<V> *next)
       : value(value), next_node(next), prev_node(prev) {}
