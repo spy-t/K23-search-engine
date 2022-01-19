@@ -80,6 +80,28 @@ template <typename T> class bk_tree_node {
     }
   }
 
+  template <typename Q>
+  T *find(const distance_function &df, Q query, int parent_to_query) const {
+    int lower_bound = parent_to_query;
+    int upper_bound = parent_to_query;
+    for (auto child = this->children.cbegin(); child != this->children.cend();
+         child++) {
+      int dist = df(child.operator*()->data.get_string_view(),
+                    query.get_string_view(), upper_bound);
+      if (dist == 0) {
+        return &child.operator*()->data;
+      }
+      if (child.operator*()->distance_from_parent < lower_bound) {
+        continue;
+      } else if (child.operator*()->distance_from_parent <= upper_bound) {
+        return child.operator*()->find(df, query, dist);
+      } else {
+        break;
+      }
+    }
+    return nullptr;
+  }
+
 public:
   explicit bk_tree_node(T d)
       : data(d), distance_from_parent(0),
@@ -168,13 +190,17 @@ public:
     return ret;
   }
 
-  template <typename Q> qs::optional<T *> find(const Q what) const {
-    auto res = this->match(0, what);
-    if (res.get_size() != 1) {
-      return qs::optional<T *>();
-    } else {
-      return qs::optional<T *>(res.head->get());
+  template <typename Q> T *find(const Q what) const {
+    if (this->root == nullptr) {
+      return nullptr;
     }
+    int D =
+        (*dist_func)(this->root->data.get_string_view(), what.get_string_view(),
+                     std::numeric_limits<int>::max());
+    if (D == 0) {
+      return &this->root->data;
+    }
+    return this->root->find(dist_func, what, D);
   }
 
 #ifdef QS_DEBUG
