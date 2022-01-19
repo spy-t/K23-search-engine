@@ -103,12 +103,12 @@ static void *add_to_tree(Query *q, qs::string_view *str, ts_bk_tree *tree) {
   if (t == nullptr)
     return nullptr;
   auto found = t->find(*str);
-  if (found.is_empty()) {
+  if (found == nullptr) {
     auto en = entry(*str);
     en.payload.push(q);
     t->insert(en);
   } else {
-    found.get()->payload.push(q);
+    found->payload.push(q);
   }
   tree->unlock();
   return nullptr;
