@@ -95,9 +95,7 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
 
     WHEN("Searching for the word 'nada'") {
       auto res = tree.find(qs::string_view("nada"));
-      THEN("nothing is found") {
-        REQUIRE(res == nullptr);
-      }
+      THEN("nothing is found") { REQUIRE(res == nullptr); }
     }
   }
 

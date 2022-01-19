@@ -32,8 +32,9 @@ public:
   std::size_t get_size() { return this->table.get_size(); }
 
   qs::vector<K> keys() {
-    qs::vector<K> ret{table.get_size() + (std::size_t)(table.get_size() * 0.75)};
-    for (auto && el = table.begin(); el != table.end(); el++) {
+    qs::vector<K> ret{table.get_size() +
+                      (std::size_t)(table.get_size() * 0.75)};
+    for (auto &&el = table.begin(); el != table.end(); el++) {
       ret.push(el.key());
     }
     return ret;
