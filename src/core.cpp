@@ -94,10 +94,10 @@ ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
 ErrorCode DestroyIndex() { return EC_SUCCESS; }
 
-static void *add_to_tree(Query *q, qs::string_view *str, ts_bk_tree *tree) {
+static void add_to_tree(Query *q, qs::string_view *str, ts_bk_tree *tree) {
   auto t = tree->lock();
   if (t == nullptr)
-    return nullptr;
+    return;
   auto found = t->find(*str);
   if (found == nullptr) {
     auto en = entry(*str);
@@ -107,7 +107,6 @@ static void *add_to_tree(Query *q, qs::string_view *str, ts_bk_tree *tree) {
     found->payload.push(q);
   }
   tree->unlock();
-  return nullptr;
 }
 
 struct add_to_tree_job : public qs::job {
@@ -121,12 +120,11 @@ struct add_to_tree_job : public qs::job {
   void operator()() override { add_to_tree(q, str, tree); }
 };
 
-static void *add_to_hash_table(Query *q, qs::string_view *str,
-                               ts_hash_table *ht) {
-
+static void add_to_hash_table(Query *q, qs::string_view *str,
+                              ts_hash_table *ht) {
   auto e = ht->lock();
   if (e == nullptr)
-    return nullptr;
+    return;
   auto f = e->lookup(*str);
   if (f == e->end()) {
     auto qv = qvec{};
@@ -136,7 +134,6 @@ static void *add_to_hash_table(Query *q, qs::string_view *str,
     f->push(q);
   }
   ht->unlock();
-  return nullptr;
 }
 
 struct add_to_hash_table_job : public qs::job {
@@ -275,20 +272,6 @@ static void *match_queries(ts_bk_tree *index, qs::string_view *w,
   return nullptr;
 }
 
-struct match_queries_job : public qs::job {
-
-  ts_bk_tree *index;
-  qs::string_view *w;
-  DocumentResults *docRes;
-  MatchType match_type;
-
-  match_queries_job(ts_bk_tree *index, qs::string_view *w,
-                    DocumentResults *docRes, MatchType match_type)
-      : index{index}, w{w}, docRes{docRes}, match_type{match_type} {}
-
-  void operator()() override { match_queries(index, w, docRes, match_type); }
-};
-
 static void *match_exact(ts_hash_table *e, qs::string_view *w,
                          DocumentResults *docRes) {
   auto ht = e->get_data();
@@ -303,23 +286,11 @@ static void *match_exact(ts_hash_table *e, qs::string_view *w,
   return nullptr;
 }
 
-struct match_exact_job : public qs::job {
-  ts_hash_table *e;
-  qs::string_view *w;
-  DocumentResults *docRes;
-
-  match_exact_job(ts_hash_table *e, qs::string_view *w, DocumentResults *docRes)
-      : e{e}, w{w}, docRes{docRes} {}
-
-  void operator()() override { match_exact(e, w, docRes); }
-};
-
-bool match_has_started = false;
-
-void match_doc(ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
-               qs::linked_list<DocumentResults> *doc_res,
-               qs::list_node<DocumentResults> *res,
-               qs::concurrent_queue<DocumentResults> *fin_res) {
+void match_doc(
+    ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
+    qs::thread_safe_container<qs::linked_list<DocumentResults>> *doc_res,
+    qs::list_node<DocumentResults> *res,
+    qs::concurrent_queue<DocumentResults> *fin_res) {
   auto &&r = res->get();
   for (auto &w : r.words) {
     match_queries(ed, &w, &r, MT_EDIT_DIST);
@@ -327,38 +298,41 @@ void match_doc(ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
     match_exact(ex, &w, &r);
   }
   fin_res->enqueue(std::move(r));
-  doc_res->remove(res);
+  doc_res->lock()->remove(res);
+  doc_res->unlock();
 }
 
 struct match_doc_job : public qs::job {
   ts_bk_tree *ed;
   ts_bk_tree *h;
   ts_hash_table *ex;
-  qs::linked_list<DocumentResults> *doc_res;
+  qs::thread_safe_container<qs::linked_list<DocumentResults>> *doc_res;
   qs::list_node<DocumentResults> *res;
   qs::concurrent_queue<DocumentResults> *fin_res;
 
-  match_doc_job(ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
-                qs::linked_list<DocumentResults> *doc_res,
-                qs::list_node<DocumentResults> *res,
-                qs::concurrent_queue<DocumentResults> *fin_res)
+  match_doc_job(
+      ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
+      qs::thread_safe_container<qs::linked_list<DocumentResults>> *doc_res,
+      qs::list_node<DocumentResults> *res,
+      qs::concurrent_queue<DocumentResults> *fin_res)
       : ed{ed}, h{h}, ex{ex}, doc_res{doc_res}, res{res}, fin_res{fin_res} {}
 
   void operator()() override { match_doc(ed, h, ex, doc_res, res, fin_res); }
 };
 
 qs::concurrent_queue<DocumentResults> finished_results{};
-qs::linked_list<DocumentResults> docs{};
+qs::thread_safe_container<qs::linked_list<DocumentResults>> docs{};
 
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   if (query_has_started) {
     job_scheduler().wait_all_finish();
     query_has_started = false;
   }
-  match_has_started = true;
-  docs.append(DocumentResults{doc_id, active_queries, doc_str});
-  auto res_node = docs.tail;
+  auto d = docs.lock();
+  d->append(DocumentResults{doc_id, active_queries, doc_str});
+  auto res_node = d->tail;
   auto &&res = res_node->get();
+  docs.unlock();
   qs::parse_string(res.doc_str.data(), ' ',
                    [&](qs::string_view &word) { res.words.insert(word); });
   job_scheduler().submit_job(
@@ -388,6 +362,6 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
   }
 
   qsort(*p_query_ids, *p_num_res, sizeof(QueryID), &comp);
-  finished_results.dequeue();
+  finished_results.dequeue(nullptr);
   return EC_SUCCESS;
 }
