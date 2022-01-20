@@ -36,15 +36,13 @@ struct QueryResult {
 
 struct DocumentResults {
   DocID docId{};
-  qs::thread_safe_container<qs::hash_table<QueryID, QueryResult>> results;
+  qs::hash_table<QueryID, QueryResult> results;
   qs::hash_set<qs::string_view> words;
   qs::string doc_str;
 
   DocumentResults() = default;
   DocumentResults(DocID docId, size_t results_cap, const char *doc_str)
-      : docId{docId}, results{qs::hash_table<QueryID, QueryResult>{
-                          results_cap}},
-        doc_str(doc_str) {}
+      : docId{docId}, results{results_cap}, doc_str(doc_str) {}
   DocumentResults(DocumentResults &&other) noexcept
       : docId{other.docId}, results{std::move(other.results)},
         words{std::move(other.words)}, doc_str(std::move(other.doc_str)) {}
@@ -89,10 +87,8 @@ static ts_bk_tree *hamming_bk_trees() {
   return containers;
 }
 
-// Always the last is the results of the active doc
-static qs::queue<DocumentResults> results;
 static qs::hash_table<unsigned int, DistanceThresholdCounters>
-    thresholdCounters{128};
+    thresholdCounters{32};
 
 ErrorCode InitializeIndex() { return EC_SUCCESS; }
 
@@ -245,21 +241,17 @@ ErrorCode EndQuery(QueryID query_id) {
   return EC_SUCCESS;
 }
 
-static void add_query_to_doc_results(
-    qs::thread_safe_container<qs::hash_table<QueryID, QueryResult>>
-        &resultsTable,
-    Query *q, qs::string_view *word) {
-  auto rt = resultsTable.lock();
-  auto iter = rt->lookup(q->id);
-  if (iter == rt->end()) {
+static void add_query_to_doc_results(qs::hash_table<QueryID, QueryResult> &rt,
+                                     Query *q, qs::string_view *word) {
+  auto iter = rt.lookup(q->id);
+  if (iter == rt.end()) {
     auto queryRes = QueryResult{};
     queryRes.query = q;
     queryRes.matched_words.insert(*word);
-    rt->insert(q->id, std::move(queryRes));
+    rt.insert(q->id, std::move(queryRes));
   } else {
     iter->matched_words.insert(*word);
   }
-  resultsTable.unlock();
 }
 
 static void *match_queries(ts_bk_tree *index, qs::string_view *w,
@@ -324,31 +316,54 @@ struct match_exact_job : public qs::job {
 
 bool match_has_started = false;
 
+void match_doc(ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
+               qs::linked_list<DocumentResults> *doc_res,
+               qs::list_node<DocumentResults> *res,
+               qs::concurrent_queue<DocumentResults> *fin_res) {
+  auto &&r = res->get();
+  for (auto &w : r.words) {
+    match_queries(ed, &w, &r, MT_EDIT_DIST);
+    match_queries(&h[w.size() - MIN_WORD_LENGTH], &w, &r, MT_HAMMING_DIST);
+    match_exact(ex, &w, &r);
+  }
+  fin_res->enqueue(std::move(r));
+  doc_res->remove(res);
+}
+
+struct match_doc_job : public qs::job {
+  ts_bk_tree *ed;
+  ts_bk_tree *h;
+  ts_hash_table *ex;
+  qs::linked_list<DocumentResults> *doc_res;
+  qs::list_node<DocumentResults> *res;
+  qs::concurrent_queue<DocumentResults> *fin_res;
+
+  match_doc_job(ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
+                qs::linked_list<DocumentResults> *doc_res,
+                qs::list_node<DocumentResults> *res,
+                qs::concurrent_queue<DocumentResults> *fin_res)
+      : ed{ed}, h{h}, ex{ex}, doc_res{doc_res}, res{res}, fin_res{fin_res} {}
+
+  void operator()() override { match_doc(ed, h, ex, doc_res, res, fin_res); }
+};
+
+qs::concurrent_queue<DocumentResults> finished_results{};
+qs::linked_list<DocumentResults> docs{};
+
 ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
   if (query_has_started) {
     job_scheduler().wait_all_finish();
     query_has_started = false;
   }
   match_has_started = true;
-  results.enqueue(DocumentResults{doc_id, active_queries, doc_str});
-  auto &docRes = *(results.last());
-  qs::parse_string(docRes.doc_str.data(), ' ',
-                   [&](qs::string_view &word) { docRes.words.insert(word); });
-  for (auto &w : docRes.words) {
-    // Check for edit distance
-    auto &edit = edit_bk_tree();
-    job_scheduler().submit_job(
-        new match_queries_job{&edit, &w, &docRes, MT_EDIT_DIST});
-
-    // Check for hamming distance
-    auto hams = hamming_bk_trees();
-    auto &ham = hams[w.size() - MIN_WORD_LENGTH];
-    job_scheduler().submit_job(
-        new match_queries_job{&ham, &w, &docRes, MT_HAMMING_DIST});
-
-    // Check for exact match
-    job_scheduler().submit_job(new match_exact_job{&exact(), &w, &docRes});
-  }
+  docs.append(DocumentResults{doc_id, active_queries, doc_str});
+  auto res_node = docs.tail;
+  auto &&res = res_node->get();
+  qs::parse_string(res.doc_str.data(), ' ',
+                   [&](qs::string_view &word) { res.words.insert(word); });
+  job_scheduler().submit_job(
+      new match_doc_job{&edit_bk_tree(), hamming_bk_trees(), &exact(), &docs,
+                        res_node, &finished_results});
   return EC_SUCCESS;
 }
 
@@ -357,25 +372,22 @@ static int comp(const void *a, const void *b) {
 }
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
-  job_scheduler().wait_all_finish();
-  auto opt = results.dequeue();
-  if (opt.is_empty()) {
+  DocumentResults *d_res = finished_results.peek();
+  if (d_res == nullptr) {
     return EC_NO_AVAIL_RES;
   }
-  auto &docRes = opt.get();
-  *p_doc_id = docRes.docId;
+  *p_doc_id = d_res->docId;
   *p_num_res = 0;
-
   *p_query_ids =
-      static_cast<QueryID *>(malloc(sizeof(QueryID) * queries.get_size()));
+      static_cast<QueryID *>(malloc(sizeof(QueryID) * active_queries));
 
-  auto r = docRes.results.get_data();
-  for (auto &qRes : (*r)) {
+  for (auto &qRes : d_res->results) {
     if (qRes.matched_words.get_size() == qRes.query->word_count) {
       (*p_query_ids)[(*p_num_res)++] = qRes.query->id;
     }
   }
 
   qsort(*p_query_ids, *p_num_res, sizeof(QueryID), &comp);
+  finished_results.dequeue();
   return EC_SUCCESS;
 }
