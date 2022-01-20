@@ -8,7 +8,7 @@ TEST_CASE("Parse file line by line", "[parser]") {
     const char *filepath = "./src/test/resources/test_entry.txt";
     FILE *f = std::fopen(filepath, "r");
     REQUIRE(f);
-    qs::parse_file(f, '\n', [](const qs::string &entry) {
+    qs::parse_file(f, '\n', [&](const qs::string &entry) {
       REQUIRE(entry == "test_entry");
     });
     std::fclose(f);

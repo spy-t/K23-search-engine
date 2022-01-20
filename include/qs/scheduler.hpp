@@ -17,14 +17,13 @@ public:
   void start() {
     while (true) {
       auto job = queue.peek();
-      auto is_empty = false;
       if (queue.is_closed()) {
         break;
       }
       if (job != nullptr) {
         (**job)();
         delete *job;
-        queue.dequeue(is_empty);
+        queue.dequeue(nullptr);
       }
     }
   }

@@ -28,7 +28,7 @@ TEST_CASE("the concurrent queue works as expected", "[queue]") {
   bool is_empty = false;
   int got = 0;
   while (!is_empty) {
-    got += q.dequeue(is_empty).get();
+    got += q.dequeue(&is_empty).get();
   }
 
   REQUIRE(got == wanted);
