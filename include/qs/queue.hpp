@@ -87,14 +87,17 @@ public:
     return ret;
   }
 
-  qs::optional<T> dequeue() {
+  qs::optional<T> dequeue(bool &empty_out) {
     QS_UNWRAP(pthread_mutex_lock(&this->mutex));
     while (q.empty() && !this->closed) {
       QS_UNWRAP(pthread_cond_wait(&this->empty, &this->mutex));
     }
     qs::optional<T> ret;
-    if (!q.empty()) {
+    if (q.empty()) {
+      empty_out = true;
+    } else {
       auto item = q.dequeue();
+      empty_out = q.empty();
       ret = qs::optional<T>{std::move(item)};
       QS_UNWRAP(pthread_cond_signal(&this->empty));
     }
