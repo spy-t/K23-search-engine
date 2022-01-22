@@ -5,7 +5,7 @@
 
 namespace qs {
 
-int hamming_distance(qs::string_view s1, qs::string_view s2, int max) {
+int hamming_distance(qs::string_view s1, qs::string_view s2) {
   if (s1.size() != s2.size()) {
     // TODO(spyros): This should be an assertion. Change this when the assertion
     // system is in place
@@ -16,7 +16,7 @@ int hamming_distance(qs::string_view s1, qs::string_view s2, int max) {
   std::size_t len = s1.size();
   auto *c1 = s1.data();
   auto *c2 = s2.data();
-  for (std::size_t i = 0; i < len && max >= dist; i++) {
+  for (std::size_t i = 0; i < len; i++) {
     dist += c1[i] != c2[i];
   }
   return dist;
@@ -33,7 +33,7 @@ static QS_FORCE_INLINE void init_edit_buffer(int *buffer, int len) {
 #define EDIT_BUFFER_SIZE (MAX_WORD_LENGTH + MAX_WORD_LENGTH)
 #endif
 
-int edit_distance(qs::string_view s1, qs::string_view s2, int max) {
+int edit_distance(qs::string_view s1, qs::string_view s2) {
   int d[EDIT_BUFFER_SIZE];
   int max_len = (int)s1.size();
   auto *max_str = s1.data();
@@ -75,9 +75,6 @@ int edit_distance(qs::string_view s1, qs::string_view s2, int max) {
       prev = d[j];
       d[j] = functions::min(sub, functions::min(del, ins) + 1);
       best = functions::min(best, d[j]);
-    }
-    if (best > max) {
-      return best;
     }
   }
 
