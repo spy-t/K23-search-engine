@@ -160,7 +160,7 @@ public:
       auto h = stack.at(--curr_stack_pos);
       curr_node = h.node;
       D = (*dist_func)(curr_node->data.get_string_view(),
-                       query.get_string_view(), h.upper_bound);
+                       query.get_string_view(), std::numeric_limits<int>::max());
       if (D <= threshold) {
         ret.append(&curr_node->data);
       }
@@ -196,7 +196,7 @@ public:
       auto h = stack.at(--curr_stack_pos);
       curr_node = h.node;
       D = (*dist_func)(curr_node->data.get_string_view(),
-                       what.get_string_view(), h.upper_bound);
+                       what.get_string_view(), std::numeric_limits<int>::max());
       if (D == 0) {
         return &curr_node->data;
       }
