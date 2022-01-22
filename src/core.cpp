@@ -285,18 +285,45 @@ static void *match_exact(ts_hash_table *e, qs::string_view *w,
   }
   return nullptr;
 }
+struct match_queries_job : public qs::job {
+
+  ts_bk_tree *index;
+  qs::string_view *w;
+  DocumentResults *docRes;
+  MatchType match_type;
+
+  match_queries_job(ts_bk_tree *index, qs::string_view *w,
+                    DocumentResults *docRes, MatchType match_type)
+      : index{index}, w{w}, docRes{docRes}, match_type{match_type} {}
+
+  void operator()() override { match_queries(index, w, docRes, match_type); }
+};
+
+struct match_exact_job : public qs::job {
+  ts_hash_table *e;
+  qs::string_view *w;
+  DocumentResults *docRes;
+
+  match_exact_job(ts_hash_table *e, qs::string_view *w, DocumentResults *docRes)
+      : e{e}, w{w}, docRes{docRes} {}
+
+  void operator()() override { match_exact(e, w, docRes); }
+};
 
 void match_doc(
     ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
     qs::thread_safe_container<qs::linked_list<DocumentResults>> *doc_res,
     qs::list_node<DocumentResults> *res,
     qs::concurrent_queue<DocumentResults> *fin_res) {
+  qs::scheduler s{3};
   auto &&r = res->get();
   for (auto &w : r.words) {
-    match_queries(ed, &w, &r, MT_EDIT_DIST);
-    match_queries(&h[w.size() - MIN_WORD_LENGTH], &w, &r, MT_HAMMING_DIST);
-    match_exact(ex, &w, &r);
+    s.submit_job(new match_queries_job(ed, &w, &r, MT_EDIT_DIST));
+    s.submit_job(new match_queries_job(&h[w.size() - MIN_WORD_LENGTH], &w, &r,
+                                       MT_HAMMING_DIST));
+    s.submit_job(new match_exact_job(ex, &w, &r));
   }
+  s.wait_all_finish();
   fin_res->enqueue(std::move(r));
   doc_res->lock()->remove(res);
   doc_res->unlock();
