@@ -387,7 +387,7 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
   *p_query_ids =
       static_cast<QueryID *>(malloc(sizeof(QueryID) * active_queries));
 
-  for (auto &qRes : d_res->results) {
+  for (auto &qRes : *d_res->results.get_data()) {
     if (qRes.matched_words.get_size() == qRes.query->word_count) {
       (*p_query_ids)[(*p_num_res)++] = qRes.query->id;
     }
