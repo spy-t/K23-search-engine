@@ -30,89 +30,19 @@ template <typename T> class bk_tree_node {
 
   T data;
   int distance_from_parent{};
+  node_p parent;
   node_list children;
 
-  void add_child(node_p new_child, const distance_function &dist_func) {
-    int n_distance_from_parent;
-
-    n_distance_from_parent = dist_func(this->data.get_string_view(),
-                                       new_child->data.get_string_view(),
-                                       std::numeric_limits<int>::max());
-    if (this->children.get_size() > 0) {
-      new_child->distance_from_parent = n_distance_from_parent;
-      auto result = this->children.find(new_child);
-      if (result == this->children.end()) {
-        this->children.insert(new_child);
-      } else {
-        (*result)->add_child(new_child, dist_func);
-      }
-    } else {
-      new_child->distance_from_parent = n_distance_from_parent;
-      this->children.insert(new_child);
-    }
-  }
-
-  void add_child(T child_data, const distance_function &dist_func) {
-    auto new_child = new bk_tree_node<T>(child_data);
-    this->add_child(new_child, dist_func);
-  }
-
-  template <typename Q>
-  void match(const distance_function &df, int threshold, Q query,
-             int parent_to_query, qs::linked_list<T *> &result) const {
-    int lower_bound = parent_to_query - threshold;
-    int upper_bound = parent_to_query + threshold;
-    for (auto child = this->children.cbegin(); child != this->children.cend();
-         child++) {
-      int dist = df(child.operator*()->data.get_string_view(),
-                    query.get_string_view(), upper_bound);
-      if (dist <= threshold) {
-        result.append(&child.operator*()->data);
-      }
-
-      if (child.operator*()->distance_from_parent < lower_bound) {
-        continue;
-      } else if (child.operator*()->distance_from_parent <= upper_bound) {
-        child.operator*()->match(df, threshold, query, dist, result);
-      } else {
-        break;
-      }
-    }
-  }
-
-  template <typename Q>
-  T *find(const distance_function &df, Q query, int parent_to_query) const {
-    int lower_bound = parent_to_query;
-    int upper_bound = parent_to_query;
-    for (auto child = this->children.cbegin(); child != this->children.cend();
-         child++) {
-      int dist = df(child.operator*()->data.get_string_view(),
-                    query.get_string_view(), upper_bound);
-      if (dist == 0) {
-        return &child.operator*()->data;
-      }
-      if (child.operator*()->distance_from_parent < lower_bound) {
-        continue;
-      } else if (child.operator*()->distance_from_parent <= upper_bound) {
-        return child.operator*()->find(df, query, dist);
-      } else {
-        break;
-      }
-    }
-    return nullptr;
-  }
-
 public:
-  explicit bk_tree_node(T d)
-      : data(d), distance_from_parent(0),
-        children(node_list(bk_tree_node::sl_compare_func)) {}
+  explicit bk_tree_node(T d, node_p parent)
+      : data{d}, distance_from_parent{0}, parent{parent},
+        children{node_list(bk_tree_node::sl_compare_func)} {}
 
   bk_tree_node(bk_tree_node &&other) noexcept {
-    if (this != &other) {
-      functions::for_each(this->children.begin(), this->children.end(),
-                          [](node_p curr) { delete curr; });
-      this->children = other.children;
-    }
+    functions::for_each(this->children.begin(), this->children.end(),
+                        [](node_p curr) { delete curr; });
+    this->children = other.children;
+    this->parent = other.parent;
   }
 
   ~bk_tree_node() {
@@ -130,8 +60,12 @@ public:
 template <typename T> class bk_tree {
   using node_p = bk_tree_node<T> *;
 
-  distance_function dist_func;
+  distance_function dist_func{};
   node_p root;
+#ifdef QS_DEBUG
+public:
+#endif
+  std::size_t depth = 0;
 
 public:
   friend class bk_tree_node<T>;
@@ -151,56 +85,135 @@ public:
       : bk_tree(it.begin(), it.end(), d) {}
 
   bk_tree(bk_tree &&other) noexcept {
+    this->root = std::move(other.root);
+    this->dist_func = other.dist_func;
+  }
+  bk_tree &operator=(bk_tree &&other) noexcept {
     if (this != &other) {
+      delete this->root;
       this->root = std::move(other.root);
       this->dist_func = other.dist_func;
     }
-  }
-  bk_tree &operator=(bk_tree &&other) noexcept {
-    delete this->root;
-    this->root = std::move(other.root);
-    this->dist_func = other.dist_func;
     return *this;
   }
 
   ~bk_tree() { delete this->root; }
 
   void insert(T data) {
-    if (this->root == nullptr) {
-      this->root = new bk_tree_node<T>(data);
-    } else {
-      this->root->add_child(data, dist_func);
+    node_p curr_node = this->root;
+    if (curr_node == nullptr) {
+      this->root = new bk_tree_node<T>{data, nullptr};
+      this->depth++;
+      return;
+    }
+    int distance_from_parent;
+    auto new_child = new bk_tree_node<T>{data, nullptr};
+    std::size_t local_depth = 1;
+    while (true) {
+      local_depth++;
+      distance_from_parent = dist_func(curr_node->data.get_string_view(),
+                                       new_child->data.get_string_view(),
+                                       std::numeric_limits<int>::max());
+      if (curr_node->children.get_size() > 0) {
+        new_child->distance_from_parent = distance_from_parent;
+        auto res = curr_node->children.find(new_child);
+        if (res == curr_node->children.end()) {
+          new_child->parent = curr_node;
+          curr_node->children.insert(new_child);
+          break;
+        } else {
+          curr_node = *res;
+        }
+      } else {
+        new_child->distance_from_parent = distance_from_parent;
+        curr_node->children.insert(new_child);
+        break;
+      }
+    }
+    if (this->depth < local_depth) {
+      this->depth = local_depth;
     }
   }
 
-  template <typename Q>
-  qs::linked_list<T *> match(int threshold, const Q query) const {
-    if (this->root == nullptr) {
-      return qs::linked_list<T *>();
-    }
-    auto ret = qs::linked_list<T *>();
-    int D;
-    D = (*dist_func)(this->root->data.get_string_view(),
-                     query.get_string_view(), std::numeric_limits<int>::max());
+private:
+  struct match_helper {
+    node_p node;
+    int upper_bound;
+  };
 
-    if (D <= threshold) {
-      ret.append(&this->root->data);
+public:
+  template <typename Q>
+  qs::linked_list<T *> match(int threshold, Q query) const {
+    qs::linked_list<T *> ret{};
+    node_p curr_node;
+    int D;
+    qs::vector<match_helper> stack{this->depth * 2};
+    int curr_stack_pos = -1;
+    if (this->root == nullptr) {
+      return ret;
+    } else {
+      stack.set(++curr_stack_pos,
+                match_helper{this->root, std::numeric_limits<int>::max()});
     }
-    this->root->match(dist_func, threshold, query, D, ret);
+
+    while (curr_stack_pos >= 0) {
+      auto h = stack.at(curr_stack_pos--);
+      curr_node = h.node;
+      D = (*dist_func)(curr_node->data.get_string_view(),
+                       query.get_string_view(), h.upper_bound);
+      if (D <= threshold) {
+        ret.append(&curr_node->data);
+      }
+      int lower_bound = D - threshold;
+      int upper_bound = D + threshold;
+      for (auto child = curr_node->children.cbegin();
+           child != curr_node->children.cend(); child++) {
+        if ((*child)->distance_from_parent < lower_bound) {
+          continue;
+        } else if (child.operator*()->distance_from_parent <= upper_bound) {
+          stack.set(++curr_stack_pos, match_helper{*child, upper_bound});
+        } else {
+          break;
+        }
+      }
+    }
     return ret;
   }
 
   template <typename Q> T *find(const Q what) const {
+    node_p curr_node;
+    int D;
+    qs::vector<match_helper> stack{this->depth * 2};
+    int curr_stack_pos = -1;
     if (this->root == nullptr) {
       return nullptr;
+    } else {
+      stack.set(++curr_stack_pos,
+                match_helper{this->root, std::numeric_limits<int>::max()});
     }
-    int D =
-        (*dist_func)(this->root->data.get_string_view(), what.get_string_view(),
-                     std::numeric_limits<int>::max());
-    if (D == 0) {
-      return &this->root->data;
+
+    while (curr_stack_pos >= 0) {
+      auto h = stack.at(curr_stack_pos--);
+      curr_node = h.node;
+      D = (*dist_func)(curr_node->data.get_string_view(),
+                       what.get_string_view(), h.upper_bound);
+      if (D == 0) {
+        return &curr_node->data;
+      }
+      int lower_bound = D;
+      int upper_bound = D;
+      for (auto child = curr_node->children.cbegin();
+           child != curr_node->children.cend(); child++) {
+        if ((*child)->distance_from_parent < lower_bound) {
+          continue;
+        } else if (child.operator*()->distance_from_parent <= upper_bound) {
+          stack.set(++curr_stack_pos, match_helper{*child, upper_bound});
+        } else {
+          break;
+        }
+      }
     }
-    return this->root->find(dist_func, what, D);
+    return nullptr;
   }
 
 #ifdef QS_DEBUG

@@ -37,6 +37,7 @@ SCENARIO("BK-Tree correct construction and matching", "[bk_tree]") {
     word_vec.push(qs::string_view("smal"));
     word_vec.push(qs::string_view("melt"));
     auto tree = qs::bk_tree<qs::string_view>(word_vec, &qs::hamming_distance);
+    REQUIRE(tree.depth == 3);
 
     THEN("'hell' is the root") {
       auto r = tree.get_root();
