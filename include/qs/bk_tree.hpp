@@ -148,16 +148,16 @@ public:
     node_p curr_node;
     int D;
     qs::vector<match_helper> stack{this->depth * 2};
-    int curr_stack_pos = -1;
+    int curr_stack_pos = 0;
     if (this->root == nullptr) {
       return ret;
     } else {
-      stack.set(++curr_stack_pos,
+      stack.set(curr_stack_pos++,
                 match_helper{this->root, std::numeric_limits<int>::max()});
     }
 
-    while (curr_stack_pos >= 0) {
-      auto h = stack.at(curr_stack_pos--);
+    while (curr_stack_pos > 0) {
+      auto h = stack.at(--curr_stack_pos);
       curr_node = h.node;
       D = (*dist_func)(curr_node->data.get_string_view(),
                        query.get_string_view(), h.upper_bound);
@@ -171,7 +171,7 @@ public:
         if ((*child)->distance_from_parent < lower_bound) {
           continue;
         } else if (child.operator*()->distance_from_parent <= upper_bound) {
-          stack.set(++curr_stack_pos, match_helper{*child, upper_bound});
+          stack.set(curr_stack_pos++, match_helper{*child, upper_bound});
         } else {
           break;
         }
@@ -184,16 +184,16 @@ public:
     node_p curr_node;
     int D;
     qs::vector<match_helper> stack{this->depth * 2};
-    int curr_stack_pos = -1;
+    int curr_stack_pos = 0;
     if (this->root == nullptr) {
       return nullptr;
     } else {
-      stack.set(++curr_stack_pos,
+      stack.set(curr_stack_pos++,
                 match_helper{this->root, std::numeric_limits<int>::max()});
     }
 
-    while (curr_stack_pos >= 0) {
-      auto h = stack.at(curr_stack_pos--);
+    while (curr_stack_pos > 0) {
+      auto h = stack.at(--curr_stack_pos);
       curr_node = h.node;
       D = (*dist_func)(curr_node->data.get_string_view(),
                        what.get_string_view(), h.upper_bound);
@@ -207,7 +207,7 @@ public:
         if ((*child)->distance_from_parent < lower_bound) {
           continue;
         } else if (child.operator*()->distance_from_parent <= upper_bound) {
-          stack.set(++curr_stack_pos, match_helper{*child, upper_bound});
+          stack.set(curr_stack_pos++, match_helper{*child, upper_bound});
         } else {
           break;
         }
