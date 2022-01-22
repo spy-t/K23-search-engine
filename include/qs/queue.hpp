@@ -94,10 +94,12 @@ public:
     }
     qs::optional<T> ret;
     if (q.empty()) {
-      if (empty_out != nullptr) *empty_out = true;
+      if (empty_out != nullptr)
+        *empty_out = true;
     } else {
       auto item = q.dequeue();
-      if (empty_out != nullptr) *empty_out = q.empty();
+      if (empty_out != nullptr)
+        *empty_out = q.empty();
       ret = qs::optional<T>{std::move(item)};
       QS_UNWRAP(pthread_cond_signal(&this->empty));
     }
