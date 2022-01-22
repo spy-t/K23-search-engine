@@ -36,13 +36,15 @@ struct QueryResult {
 
 struct DocumentResults {
   DocID docId{};
-  qs::hash_table<QueryID, QueryResult> results;
+  qs::thread_safe_container<qs::hash_table<QueryID, QueryResult>> results;
   qs::hash_set<qs::string_view> words;
   qs::string doc_str;
 
   DocumentResults() = default;
   DocumentResults(DocID docId, size_t results_cap, const char *doc_str)
-      : docId{docId}, results{results_cap}, doc_str(doc_str) {}
+      : docId{docId}, results{qs::hash_table<QueryID, QueryResult>{
+                          results_cap}},
+        doc_str(doc_str) {}
   DocumentResults(DocumentResults &&other) noexcept
       : docId{other.docId}, results{std::move(other.results)},
         words{std::move(other.words)}, doc_str(std::move(other.doc_str)) {}
@@ -238,17 +240,20 @@ ErrorCode EndQuery(QueryID query_id) {
   return EC_SUCCESS;
 }
 
-static void add_query_to_doc_results(qs::hash_table<QueryID, QueryResult> &rt,
-                                     Query *q, qs::string_view *word) {
-  auto iter = rt.lookup(q->id);
-  if (iter == rt.end()) {
+static void add_query_to_doc_results(
+    qs::thread_safe_container<qs::hash_table<QueryID, QueryResult>> &trt,
+    Query *q, qs::string_view *word) {
+  auto rt = trt.lock();
+  auto iter = rt->lookup(q->id);
+  if (iter == rt->end()) {
     auto queryRes = QueryResult{};
     queryRes.query = q;
     queryRes.matched_words.insert(*word);
-    rt.insert(q->id, std::move(queryRes));
+    rt->insert(q->id, std::move(queryRes));
   } else {
     iter->matched_words.insert(*word);
   }
+  trt.unlock();
 }
 
 static void *match_queries(ts_bk_tree *index, qs::string_view *w,
