@@ -201,7 +201,6 @@ void TestSigmod(const char *test_file_str, int time_limit_seconds,
             fprintf(out_file, "%u", cur_results[doc_id - first_result][j]);
           }
           fprintf(out_file, "\n");
-          DestroyIndex();
           fflush(out_file);
           free(query_ids);
           return;
