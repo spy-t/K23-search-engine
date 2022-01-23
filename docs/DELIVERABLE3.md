@@ -93,6 +93,8 @@ slice πάνω απο ένα ήδη allocated string. Αυτό μας επέτρ
 |-------------------------------------------------|---------|-----------|---------------------|-------------|
 | HEAD                                            | 1       | 1440      | 666                 | 394         |
 | HEAD                                            | 16      | 314       | 3057                | 393         |
+| recursive traversal                             | 1       | 959       | 1001                | 275         |
+| recursive traversal                             | 16      | 569       | 1687                | 275         |
 | std::bind jobs (parallel insertion only)        | 1       | 1340      | 714                 | 503         |
 | std::bind jobs (parallel insertion only)        | 16      | 1200      | 798                 | 503         |
 | function pointer jobs (parallel insertion only) | 16      | 1012      | 948                 | 43          |
