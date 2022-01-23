@@ -67,14 +67,12 @@ int edit_distance(qs::string_view s1, qs::string_view s2) {
   for (int i = 1; i <= min_len; i++) {
     d[0] = i;
     int prev = i - 1;
-    int best = i;
     for (int j = 1; j <= max_len; j++) {
       int sub = prev + (int)(min_str[i - 1] != max_str[j - 1]);
       int del = d[j - 1];
       int ins = d[j];
       prev = d[j];
       d[j] = functions::min(sub, functions::min(del, ins) + 1);
-      best = functions::min(best, d[j]);
     }
   }
 

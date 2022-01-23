@@ -30,13 +30,12 @@ template <typename T> class bk_tree_node {
 
   T data;
   int distance_from_parent{};
-  node_p parent;
   node_list children;
 
 public:
-  explicit bk_tree_node(T d, node_p parent)
-      : data{d}, distance_from_parent{0}, parent{parent},
-        children{node_list(bk_tree_node::sl_compare_func)} {}
+  explicit bk_tree_node(T d)
+      : data{d}, distance_from_parent{0}, children{node_list(
+                                              bk_tree_node::sl_compare_func)} {}
 
   bk_tree_node(bk_tree_node &&other) noexcept {
     functions::for_each(this->children.begin(), this->children.end(),
@@ -102,12 +101,12 @@ public:
   void insert(T data) {
     node_p curr_node = this->root;
     if (curr_node == nullptr) {
-      this->root = new bk_tree_node<T>{data, nullptr};
+      this->root = new bk_tree_node<T>{data};
       this->depth++;
       return;
     }
     int distance_from_parent;
-    auto new_child = new bk_tree_node<T>{data, nullptr};
+    auto new_child = new bk_tree_node<T>{data};
     std::size_t local_depth = 1;
     while (true) {
       local_depth++;
@@ -117,7 +116,6 @@ public:
         new_child->distance_from_parent = distance_from_parent;
         auto res = curr_node->children.find(new_child);
         if (res == curr_node->children.end()) {
-          new_child->parent = curr_node;
           curr_node->children.insert(new_child);
           break;
         } else {
