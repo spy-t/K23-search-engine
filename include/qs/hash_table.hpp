@@ -145,6 +145,8 @@ public:
   }
 
   ~hash_table() {
+    if (keys == nullptr && values == nullptr)
+      return;
     for (std::size_t i = 0; i < capacity; ++i) {
       if (!keys[i].is_gravestone) {
         std::launder(reinterpret_cast<K *>(&keys[i].key))->~K();
@@ -152,7 +154,26 @@ public:
       }
     }
     delete[] keys;
+    keys = nullptr;
     delete[] values;
+    values = nullptr;
+  }
+
+  void clear() {
+    if (keys == nullptr && values == nullptr)
+      return;
+    for (std::size_t i = 0; i < capacity; ++i) {
+      if (!keys[i].is_gravestone) {
+        std::launder(reinterpret_cast<K *>(&keys[i].key))->~K();
+        std::launder(reinterpret_cast<V *>(&values[i]))->~V();
+      }
+    }
+    delete[] keys;
+    keys = nullptr;
+    delete[] values;
+    values = nullptr;
+    capacity = 0;
+    size = 0;
   }
 
   iterator insert(const K &key, V &&value) {

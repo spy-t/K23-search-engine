@@ -18,19 +18,18 @@ struct Query {
   bool active;
   MatchType match_type;
   unsigned int match_dist;
-  unsigned int word_count;
   qs::string query_str;
   qs::hash_set<qs::string_view> unique_words{MAX_QUERY_WORDS};
 
-  Query(QueryID id, bool active, MatchType match_type, unsigned int match_dist,
-        unsigned int word_count)
-      : id(id), active(active), match_type(match_type), match_dist(match_dist),
-        word_count(word_count) {}
+  Query(QueryID id, bool active, MatchType match_type, unsigned int match_dist)
+      : id(id), active(active), match_type(match_type), match_dist(match_dist) {
+  }
 };
 
 static qs::hash_table<QueryID, qs::unique_pointer<Query>> queries{4096};
 struct QueryResult {
   Query *query;
+  bool matched = false;
   qs::hash_set<qs::string_view> matched_words;
 };
 
@@ -172,13 +171,10 @@ ErrorCode StartQuery(QueryID query_id, const char *query_str,
                      MatchType match_type, unsigned int match_dist) {
   active_queries++;
   query_has_started = true;
-  auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist, 0);
+  auto q = qs::make_unique<Query>(query_id, true, match_type, match_dist);
   q->query_str = qs::string{query_str};
   qs::parse_string(q->query_str.data(), ' ', [&q](qs::string_view &word) {
-    auto &&place = q->unique_words.insert(word);
-    if (place != q->unique_words.end()) {
-      q->word_count++;
-    }
+    q->unique_words.insert(word);
   });
 
   if (match_type == MT_EDIT_DIST) {
@@ -250,8 +246,17 @@ static void add_query_to_doc_results(
     queryRes.query = q;
     queryRes.matched_words.insert(*word);
     rt->insert(q->id, std::move(queryRes));
+    iter = rt->lookup(q->id);
   } else {
+    if (iter->matched) {
+      trt.unlock();
+      return;
+    }
     iter->matched_words.insert(*word);
+  }
+  if (iter->matched_words.get_size() == q->unique_words.get_size()) {
+    iter->matched = true;
+    iter->matched_words.clear();
   }
   trt.unlock();
 }
@@ -361,7 +366,7 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
     query_has_started = false;
   }
   auto d = docs.lock();
-  d->append(DocumentResults{doc_id, active_queries, doc_str});
+  d->append(DocumentResults{doc_id, active_queries / 2, doc_str});
   auto res_node = d->tail;
   auto &&res = res_node->get();
   docs.unlock();
@@ -384,11 +389,11 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
   }
   *p_doc_id = d_res->docId;
   *p_num_res = 0;
-  *p_query_ids =
-      static_cast<QueryID *>(malloc(sizeof(QueryID) * active_queries));
+  *p_query_ids = static_cast<QueryID *>(
+      malloc(sizeof(QueryID) * d_res->results.get_data()->get_size()));
 
   for (auto &qRes : *d_res->results.get_data()) {
-    if (qRes.matched_words.get_size() == qRes.query->word_count) {
+    if (qRes.matched) {
       (*p_query_ids)[(*p_num_res)++] = qRes.query->id;
     }
   }

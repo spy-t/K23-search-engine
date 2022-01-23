@@ -14,7 +14,7 @@ namespace qs {
 
 typedef int (*distance_function)(qs::string_view, qs::string_view);
 
-#define QS_BK_TREE_SKIP_LIST_LEVELS 16
+#define QS_BK_TREE_SKIP_LIST_LEVELS 4
 
 template <typename T> class bk_tree;
 template <typename T> class bk_tree_node;
@@ -184,7 +184,8 @@ public:
 
     while (curr_stack_pos > 0) {
       curr_node = stack.at(--curr_stack_pos);
-      D = (*dist_func)(curr_node->data.get_string_view(), what.get_string_view());
+      D = (*dist_func)(curr_node->data.get_string_view(),
+                       what.get_string_view());
       if (D == 0) {
         return &curr_node->data;
       }
