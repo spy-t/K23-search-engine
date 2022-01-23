@@ -4,6 +4,7 @@
 
 - [ΠΑΡΑΔΟΤΕΟ 1](./docs/DELIVERABLE1.md)
 - [ΠΑΡΑΔΟΤΕΟ 2](./docs/DELIVERABLE2.md)
+- [ΠΑΡΑΔΟΤΕΟ 3 - FINAL REPORT](./docs/DELIVERABLE3.md)
 
 ## Dependencies
 
@@ -83,26 +84,3 @@ To lint the project and scan for common mistakes run
 ```bash
 ninja -C build scan-build
 ```
-
-## Micro benchmarks
-
-
-| threshold   | order    | time   |
-|-------------|----------|--------|
-| 0           | random   | 2s     |
-| 0           | min      | 661ms  |
-| 0           | max      | 730ms  |
-| ----------- | -------- | ------ |
-| 1           | random   | 8s     |
-| 1           | min      | 3.45s  |
-| 1           | max      | 3.25s  |
-| ----------- | -------- | ------ |
-| 2           | random   | 17s    |
-| 2           | min      | 8.11s  |
-| 2           | max      | 7.73s  |
-| ----------- | -------- | ------ |
-| 3           | random   | 27s    |
-| 3           | min      | 12.31s |
-| 3           | max      | 11.69s |
-
-So the winner by a very small margin is max ordering (may matter for very large thresholds)
