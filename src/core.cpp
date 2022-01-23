@@ -38,6 +38,8 @@ struct DocumentResults {
   qs::thread_safe_container<qs::hash_table<QueryID, QueryResult>> results;
   qs::hash_set<qs::string_view> words;
   qs::string doc_str;
+  std::size_t answer_len = 0;
+  QueryID *answer = nullptr;
 
   DocumentResults() = default;
   DocumentResults(DocID docId, size_t results_cap, const char *doc_str)
@@ -46,7 +48,8 @@ struct DocumentResults {
         doc_str(doc_str) {}
   DocumentResults(DocumentResults &&other) noexcept
       : docId{other.docId}, results{std::move(other.results)},
-        words{std::move(other.words)}, doc_str(std::move(other.doc_str)) {}
+        words{std::move(other.words)}, doc_str(std::move(other.doc_str)),
+        answer_len{other.answer_len}, answer{other.answer} {}
   DocumentResults(const DocumentResults &other) = delete;
 };
 
@@ -320,6 +323,9 @@ struct match_exact_job : public qs::job {
   void operator()() override { match_exact(e, w, docRes); }
 };
 
+static int comp(const void *a, const void *b) {
+  return *(QueryID *)a > *(QueryID *)b;
+}
 void match_doc(
     ts_bk_tree *ed, ts_bk_tree *h, ts_hash_table *ex,
     qs::thread_safe_container<qs::linked_list<DocumentResults>> *doc_res,
@@ -334,6 +340,15 @@ void match_doc(
     s.submit_job(new match_exact_job(ex, &w, &r));
   }
   s.wait_all_finish();
+  r.answer_len = 0;
+  r.answer = static_cast<QueryID *>(
+      malloc(sizeof(QueryID) * r.results.get_data()->get_size()));
+  for (auto &qRes : *r.results.get_data()) {
+    if (qRes.matched) {
+      r.answer[r.answer_len++] = qRes.query->id;
+    }
+  }
+  qsort(r.answer, r.answer_len, sizeof(QueryID), &comp);
   fin_res->enqueue(std::move(r));
   doc_res->lock()->remove(res);
   doc_res->unlock();
@@ -377,10 +392,6 @@ ErrorCode MatchDocument(DocID doc_id, const char *doc_str) {
                         res_node, &finished_results});
   return EC_SUCCESS;
 }
-
-static int comp(const void *a, const void *b) {
-  return *(QueryID *)a > *(QueryID *)b;
-}
 ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
                           QueryID **p_query_ids) {
   DocumentResults *d_res = finished_results.peek();
@@ -388,17 +399,8 @@ ErrorCode GetNextAvailRes(DocID *p_doc_id, unsigned int *p_num_res,
     return EC_NO_AVAIL_RES;
   }
   *p_doc_id = d_res->docId;
-  *p_num_res = 0;
-  *p_query_ids = static_cast<QueryID *>(
-      malloc(sizeof(QueryID) * d_res->results.get_data()->get_size()));
-
-  for (auto &qRes : *d_res->results.get_data()) {
-    if (qRes.matched) {
-      (*p_query_ids)[(*p_num_res)++] = qRes.query->id;
-    }
-  }
-
-  qsort(*p_query_ids, *p_num_res, sizeof(QueryID), &comp);
+  *p_num_res = d_res->answer_len;
+  *p_query_ids = d_res->answer;
   finished_results.dequeue(nullptr);
   return EC_SUCCESS;
 }
